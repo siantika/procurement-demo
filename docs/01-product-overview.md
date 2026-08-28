@@ -2,286 +2,119 @@
 
 ## Mini Procurement Contract Optimizer
 
-## 1. Product Summary
+> Status: Acuan produk MVP<br>
+> Terakhir diperbarui: 28 Agustus 2026
 
-Mini Procurement Contract Optimizer adalah aplikasi web berbasis Django untuk membantu perusahaan memproses kebutuhan procurement dari sebuah instansi menggunakan vendor dan produk yang sudah tersedia pada master data internal.
+## 1. Ringkasan
 
-Sistem berfokus pada pencatatan kebutuhan procurement, penyusunan kandidat kombinasi vendor dan produk, proses optimasi, approval Manager, electronic signature sederhana, dan pembuatan kontrak final dalam format PDF.
+Mini Procurement Contract Optimizer adalah aplikasi web berbasis Django untuk memproses kebutuhan procurement sebuah instansi menggunakan vendor, product, dan vendor offer yang tersedia pada master data internal.
 
-Vendor dan produk yang digunakan pada sistem diasumsikan sudah melalui proses kerja sama dan validasi bisnis di luar aplikasi.
+Sistem membantu Procurement Staff menyusun result secara manual atau melalui optimizer, memilih result final, meminta approval Manager, mencatat electronic signature sederhana, dan menghasilkan kontrak PDF.
 
----
+Vendor dan product dianggap sudah melalui validasi bisnis di luar aplikasi.
 
-## 2. Problem Statement
+## 2. Tujuan Produk
 
-Proses procurement yang dilakukan menggunakan spreadsheet atau proses manual memiliki beberapa keterbatasan:
+MVP bertujuan untuk:
 
-* Data vendor dan produk sulit dikelola secara konsisten.
-* Perbandingan kombinasi vendor dilakukan secara manual.
-* Perhitungan harga, gross profit, dan margin rentan terhadap kesalahan karena dihitung manual.
-* Hasil pemilihan vendor sulit ditelusuri kembali.
-* Approval dan finalisasi kontrak belum memiliki workflow yang terstruktur.
+* menjaga kebutuhan asli instansi sebagai source of truth;
+* menghitung biaya, gross profit, dan margin secara konsisten;
+* memberi rekomendasi kombinasi vendor offer berdasarkan gross profit;
+* menyediakan workflow review, approval, signing, dan kontrak yang dapat ditelusuri.
 
-Sistem ini dibuat untuk menjadikan proses procurement lebih terstruktur, traceable, dan repeatable.
+## 3. Pengguna dan Tanggung Jawab
 
----
+| Role | Tanggung jawab |
+|---|---|
+| Admin | Mengelola master product, vendor, dan vendor offer |
+| Procurement Staff | Membuat request, menyusun atau memilih result, menjalankan optimizer, melakukan customization, dan submit untuk approval |
+| Manager | Review, approve/reject, dan menandatangani request yang disetujui |
 
-## 3. Product Goal
+Admin tidak mengubah kebutuhan instansi atau menentukan result final. Optimizer memberikan rekomendasi; keputusan result final tetap berada pada Procurement Staff dan Manager.
 
-Tujuan utama MVP adalah:
-
-* Mencatat kebutuhan procurement dari instansi.
-* Mengelola master vendor, produk, dan vendor offer.
-* Membuat optimizer pemilihan kandidat item-item yang memberikan margin tertinggi antara harga vendor dengan tawaran dari instansi.
-* Mendukung review dan approval oleh Manager.
-* Menghasilkan kontrak final dalam format PDF yang sudah ditandatangani oleh manager.
-
----
-
-## 4. Users and Roles
-
-### Admin
-
-Admin bertanggung jawab mengelola master data dan kandidat kombinasi procurement.
-
-Hak akses utama:
-
-* Mengelola master product.
-* Mengelola master vendor.
-* Mengelola vendor offer.
-* Mengatur kandidat kombinasi yang dapat digunakan dalam proses optimizer.
-
-Admin tidak mengubah kebutuhan asli dari instansi untuk mendapatkan hasil optimizer yang lebih baik.
-
-### Procurement Staff
-
-Procurement Staff bertanggung jawab memproses kebutuhan procurement.
-
-Hak akses utama:
-
-* Membuat procurement request.
-* Menambahkan kebutuhan dari instansi.
-* Menjalankan optimizer.
-* Melihat status optimizer.
-* Menerima notifikasi ketika optimizer selesai.
-* Melihat hasil optimizer.
-* Mengajukan hasil procurement untuk approval.
-* Mengakses kontrak final.
-
-### Manager
-
-Manager bertanggung jawab melakukan review dan approval.
-
-Hak akses utama:
-
-* Melihat procurement yang menunggu approval.
-* Melihat kebutuhan instansi dan hasil optimizer.
-* Approve atau reject procurement.
-* Memberikan electronic signature pada procurement (sudah dalam bentuk kontrak) yang disetujui.
-
----
-
-## 5. Core Concept
-
-Sistem membedakan antara kebutuhan asli dari instansi dengan cara internal perusahaan memenuhi kebutuhan tersebut.
+## 4. Konsep Utama
 
 ### Procurement Request
 
-Procurement Request merepresentasikan kebutuhan asli dari instansi.
+Procurement request menyimpan kebutuhan asli instansi, termasuk product, quantity, dan target unit price. Data ini tidak boleh diubah hanya untuk memperoleh hasil yang lebih baik.
 
-Contoh:
+### Procurement Result
 
-```text id="d5yqku"
-Product A
-Quantity: 1,000
+Procurement result menyimpan cara memenuhi seluruh request item menggunakan vendor offer. Result memiliki salah satu sumber:
 
-Product B
-Quantity: 500
+* `MANUAL`: disusun langsung oleh Procurement Staff;
+* `OPTIMIZER`: dihasilkan dan diberi ranking oleh optimizer;
+* `CUSTOMIZED`: result baru yang diturunkan dari result sebelumnya.
+
+Customization tidak menimpa result sumber. Procurement Staff memilih satu result valid sebagai `selected_result` sebelum submission.
+
+### Optimization Run
+
+Optimization run adalah proses background yang membentuk dan mengevaluasi alternatif vendor offer berdasarkan request dan master data aktif. Setiap run menyimpan input, hasil kalkulasi, ranking, dan status sebagai snapshot historis.
+
+## 5. Alur Utama
+
+```mermaid
+flowchart TD
+    A[Create / Revise Procurement Request] --> B{Pilih metode}
+    B -->|Manual| C[Susun Manual Result]
+    B -->|Otomatis| D[Run Optimizer]
+    D --> E[Notification]
+    C --> F[Result Ready]
+    E --> F
+    F --> G[Review / Customize / Select]
+    G --> H[Submit for Approval]
+    H --> I{Manager Decision}
+    I -->|Reject| A
+    I -->|Approve| J[Electronic Signature]
+    J --> K[Generate Contract PDF]
 ```
 
-Data kebutuhan tersebut menjadi acuan utama dan tidak boleh berubah hanya karena proses optimasi.
+## 6. Product Requirements
 
-### Candidate Combination
+| ID | Requirement |
+|---|---|
+| PRD-001 | Sistem menyediakan authentication dan akses berbasis role untuk Admin, Procurement Staff, dan Manager. |
+| PRD-002 | Admin dapat mengelola master product, vendor, dan vendor offer tanpa mengubah histori transaksi. |
+| PRD-003 | Procurement Staff dapat membuat request dengan minimal satu item valid; kebutuhan asli tetap menjadi source of truth. |
+| PRD-004 | Procurement Staff dapat menyusun result manual yang mencakup seluruh request item. |
+| PRD-005 | Procurement Staff dapat menjalankan optimizer secara background dan menerima ranked result. |
+| PRD-006 | Procurement Staff dapat review, customize, dan memilih satu result final tanpa menimpa result sumber. |
+| PRD-007 | Sistem memberikan in-app notification untuk hasil optimization dan rejection. |
+| PRD-008 | Procurement Staff dapat submit result valid; Manager dapat approve atau reject dengan alasan. |
+| PRD-009 | Manager yang melakukan approval dapat memberikan electronic signature sederhana. |
+| PRD-010 | Sistem menghasilkan kontrak PDF dari data yang disetujui dan ditandatangani, serta menjaga audit trail dan snapshot historis. |
 
-Candidate Combination merupakan alternatif cara memenuhi kebutuhan tersebut menggunakan vendor dan offer yang tersedia.
+## 7. Scope MVP
 
-Contoh:
+Termasuk:
 
-```text id="krknad"
-Combination A
-Product A → Vendor A
-Product B → Vendor B
-```
+* authentication dan role-based access;
+* master product, vendor, dan vendor offer;
+* procurement request dan request item;
+* manual, optimized, dan customized result;
+* background optimization dan in-app notification;
+* approval, rejection, dan electronic signature sederhana;
+* contract PDF, snapshot, dan audit trail.
 
-atau:
+Tidak termasuk:
 
-```text id="ltxjxa"
-Combination B
-Product A → Vendor C
-Product B → Vendor A
-```
+* vendor onboarding, qualification, discovery, dan negotiation;
+* OCR, fuzzy matching, dan advanced or multi-objective optimization;
+* multi-level approval dan cryptographic digital signature;
+* email atau WhatsApp notification;
+* payment, accounting, inventory, shipping, dan ERP integration.
 
-Optimizer mengevaluasi candidate combination untuk menentukan hasil terbaik.
+## 8. Prinsip Produk
 
-Procurement staff bisa memperbaharui hasil optimizer sebelum mengirim ke manager untuk aproval.
+* **Preserve the request:** optimizer dan editor result tidak mengubah kebutuhan asli.
+* **Separate requirement from solution:** request menjelaskan kebutuhan; result menjelaskan pemenuhannya.
+* **Human-controlled decision:** ranking optimizer adalah rekomendasi, bukan keputusan final.
+* **Traceable history:** result, approval, signature, dan kontrak dapat ditelusuri ke actor dan data sumber.
+* **Controlled finalization:** kontrak hanya dibuat setelah approval dan signature.
 
----
+## 9. Kriteria Keberhasilan
 
-## 6. High-Level Process
+MVP berhasil jika alur manual dan optimizer dapat diselesaikan end-to-end, kalkulasi konsisten, permission dan status transition diterapkan di server, serta perubahan master data tidak mengubah result atau kontrak historis.
 
-```text id="an156u"
-Procurement Request
-        ↓
-Run Optimizer
-        ↓
-Optimization Result
-        ↓
-Notification to Procurement Staff
-        ↓
-      Review  --> can be modify
-        ↓
-Submit for Approval
-        ↓
-Manager Approve / Reject
-        ↓
-Electronic Signature
-        ↓
-Generate Contract PDF
-```
-
----
-
-## 7. MVP Scope
-
-MVP mencakup:
-
-* Authentication.
-* Role-based access.
-* Master product.
-* Master vendor.
-* Vendor offer.
-* Procurement request.
-* Procurement request items.
-* Candidate combination.
-* Optimization result.
-* In-app notification.
-* Manager approval and rejection.
-* Electronic signature sederhana.
-* Contract PDF generation.
-
----
-
-## 8. System Boundary
-
-### Inside System
-
-Sistem menangani:
-
-* Vendor dan product master.
-* Vendor offer.
-* Procurement request.
-* Candidate combination.
-* Optimization.
-* Notification.
-* Approval.
-* Electronic signature.
-* Contract generation.
-
-### Outside System
-
-Sistem tidak menangani:
-
-* Vendor onboarding.
-* Vendor qualification.
-* Negosiasi vendor.
-* MoU atau legal agreement.
-* Supplier payment.
-* Accounting.
-* Inventory fulfillment.
-* Shipping.
-* Vendor discovery.
-
-Vendor yang tersedia pada master data dianggap sudah valid berdasarkan proses bisnis di luar sistem.
-
----
-
-## 9. Key Product Principles
-
-### Preserve Original Request
-
-Kebutuhan procurement dari instansi harus tetap menjadi source of truth.
-
-Optimizer tidak boleh mengubah kebutuhan tersebut.
-
-### Separate Requirement from Solution
-
-Procurement request menjelaskan apa yang dibutuhkan instansi.
-
-Candidate combination menjelaskan bagaimana perusahaan kita dapat memenuhi kebutuhan tersebut menggunakan item-item dari vendor.
-
-### Traceable Optimization
-
-Hasil optimizer harus dapat ditelusuri kembali ke procurement request dan data vendor yang digunakan.
-
-
-### Controlled Finalization
-
-Procurement hanya dapat menjadi kontrak final setelah melalui approval dan electronic signature Manager.
-
----
-
-## 10. Out of Scope
-
-Fitur berikut tidak termasuk MVP:
-
-* Vendor onboarding dan MoU management.
-* Automated vendor discovery.
-* Excel vendor import.
-* OCR catalog.
-* Fuzzy product matching.
-* Advanced optimization.
-* Multi-level approval.
-* Email notification.
-* WhatsApp notification.
-* Cryptographic digital signature.
-* Accounting integration.
-* Payment processing.
-* Inventory integration.
-* ERP integration.
-
----
-
-## 11. Success Criteria
-
-MVP dianggap berhasil apabila user dapat menjalankan proses berikut secara end-to-end:
-
-```text id="yhgpe0"
-Create Procurement Request
-        ↓
-Define Institution Requirements
-        ↓
-Prepare Candidate Combinations
-        ↓
-Run Optimizer
-        ↓
-Receive Completion Notification
-        ↓
-Review Optimization Result
-        ↓
-Submit for Approval
-        ↓
-Manager Approve
-        ↓
-Manager Sign
-        ↓
-Generate Final Contract PDF
-```
-
-Selain itu:
-
-* Kebutuhan asli dari instansi tetap konsisten.
-* Optimizer hanya mengevaluasi cara memenuhi kebutuhan tersebut.
-* Hasil optimizer dapat ditelusuri dan diubah oleh procurement staff.
-* Procurement Staff menerima notifikasi setelah optimizer selesai.
-* Approval dapat ditelusuri.
-* Contract final hanya dibuat setelah approval dan signature.
+Traceability requirement terhadap business rules, user flows, dan komponen arsitektur dijelaskan pada dokumen 02–04.

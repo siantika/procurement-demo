@@ -2,450 +2,142 @@
 
 ## Mini Procurement Contract Optimizer
 
-## 1. Purpose
+> Status: Acuan aturan bisnis MVP<br>
+> Terakhir diperbarui: 28 Agustus 2026
 
-Dokumen ini mendefinisikan aturan bisnis utama yang harus selalu dipenuhi oleh sistem Mini Procurement Contract Optimizer.
+## 1. Tujuan
 
-Business rules menjadi acuan untuk:
+Dokumen ini mendefinisikan aturan bisnis yang harus dijaga oleh validation, application service, database constraint, background worker, dan test.
 
-* application logic,
-* validation,
-* database constraints,
-* background processing,
-* approval workflow,
-* testing.
+## 2. Access dan Master Data
 
----
+| ID | Rule |
+|---|---|
+| BR-ACCESS-001 | Setiap tindakan hanya dapat dilakukan oleh role yang berwenang dan tetap divalidasi di server. |
+| BR-MASTER-001 | Admin mengelola product, vendor, dan vendor offer; data tersebut dianggap telah divalidasi melalui proses bisnis di luar sistem. |
+| BR-MASTER-002 | Product, vendor, dan vendor offer yang inactive tidak boleh dipakai untuk result baru. |
+| BR-MASTER-003 | Master data yang pernah digunakan tidak boleh dihapus dengan cara yang merusak histori. |
+| BR-MASTER-004 | Perubahan master data tidak boleh mengubah result atau kontrak yang sudah tersimpan. |
 
-## 2. Procurement Request Rules
+## 3. Procurement Request
 
-### BR-REQ-001 — Procurement Request as Source of Truth
+| ID | Rule |
+|---|---|
+| BR-REQ-001 | Procurement request adalah source of truth kebutuhan instansi. |
+| BR-REQ-002 | Optimizer dan editor result tidak boleh mengubah product, quantity, atau target unit price pada request. |
+| BR-REQ-003 | Perubahan resmi atas kebutuhan dilakukan melalui update request yang dapat ditelusuri dan hanya pada status yang mengizinkan. |
+| BR-REQ-004 | Request harus memiliki minimal satu item sebelum diproses. |
+| BR-REQ-005 | Quantity setiap request item harus lebih besar dari `0`; target unit price tidak boleh negatif. |
 
-Procurement request merepresentasikan kebutuhan asli dari instansi.
+## 4. Vendor Offer dan Kalkulasi
 
-### BR-REQ-002 — Request Immutability During Optimization
+| ID | Rule |
+|---|---|
+| BR-OFFER-001 | Setiap vendor offer terkait dengan satu vendor dan satu product. |
+| BR-OFFER-002 | HNA tidak boleh negatif dan discount harus berada pada rentang `0..100` persen. |
+| BR-OFFER-003 | Net purchase price harus lebih besar dari `0` agar offer eligible. |
+| BR-OFFER-004 | Nilai uang dihitung menggunakan `Decimal` dan aturan pembulatan yang sama pada semua jalur result. |
+| BR-CALC-001 | `net_purchase_price = HNA - (HNA × discount_percent / 100)`. |
+| BR-CALC-002 | `total_selling_price = quantity × target_unit_price`. |
+| BR-CALC-003 | `total_purchase = quantity × net_purchase_price`. |
+| BR-CALC-004 | `gross_profit = total_selling_price - total_purchase`. |
+| BR-CALC-005 | `margin_percent = (gross_profit / total_selling_price) × 100`; jika total selling price `0`, margin tidak boleh menyebabkan division-by-zero. |
 
-Kebutuhan asli dari instansi tidak boleh diubah hanya untuk mendapatkan hasil optimization yang lebih baik.
+## 5. Procurement Result
 
-### BR-REQ-003 — Requirement Changes
+| ID | Rule |
+|---|---|
+| BR-RESULT-001 | Result merepresentasikan cara memenuhi satu procurement request dan harus mencakup seluruh request item. |
+| BR-RESULT-002 | Setiap result item memakai vendor offer dengan product dan quantity yang sesuai request item. |
+| BR-RESULT-003 | Result memiliki source type `MANUAL`, `OPTIMIZER`, atau `CUSTOMIZED`. |
+| BR-RESULT-004 | Result manual, optimizer, dan customized menggunakan validation dan calculation policy yang sama. |
+| BR-RESULT-005 | Customization membuat result baru yang merujuk result sumber; result sumber tidak ditimpa. |
+| BR-RESULT-006 | Setiap result menyimpan snapshot product, vendor, harga, quantity, kalkulasi, actor, dan timestamp. |
+| BR-RESULT-007 | `selected_result` harus valid, berasal dari request yang sama, dan dikunci saat submission. |
 
-Jika kebutuhan instansi berubah secara resmi, perubahan harus dilakukan melalui update request yang dapat ditelusuri.
+## 6. Optimization
 
-### BR-REQ-004 — Minimum Request Item
+| ID | Rule |
+|---|---|
+| BR-OPT-001 | Optimization berjalan sebagai background job. |
+| BR-OPT-002 | Hanya satu optimization run `PENDING` atau `RUNNING` yang boleh aktif untuk request yang sama. |
+| BR-OPT-003 | Optimizer hanya menggunakan request dan master data eligible pada saat input snapshot dibuat. |
+| BR-OPT-004 | Optimizer membentuk dan mengevaluasi alternatif vendor offer tanpa mengubah procurement request. |
+| BR-OPT-005 | Status run adalah `PENDING`, `RUNNING`, `COMPLETED`, atau `FAILED`. |
+| BR-OPT-006 | Ranked result diurutkan berdasarkan objective utama gross profit tertinggi dengan tie-break yang deterministik. |
+| BR-OPT-007 | Run menyimpan input snapshot, versi algoritma, result, ranking, dan alasan kandidat ditolak. |
+| BR-OPT-008 | Kegagalan mencatat safe error, membuat notification, dan dapat di-retry melalui run baru. |
+| BR-OPT-009 | Re-run tidak menimpa run atau result sebelumnya. |
 
-Procurement request harus memiliki minimal satu item sebelum dapat diproses lebih lanjut.
+## 7. Notification
 
-### BR-REQ-005 — Valid Quantity
+| ID | Rule |
+|---|---|
+| BR-NOTIF-001 | Staff pemicu menerima in-app notification ketika optimization selesai atau gagal. |
+| BR-NOTIF-002 | Submitter menerima in-app notification ketika request ditolak. |
+| BR-NOTIF-003 | Notification dapat ditelusuri ke request atau optimization run dan tidak dibuat ganda untuk event yang sama. |
 
-Quantity setiap procurement item harus lebih besar dari 0.
+## 8. Approval dan Rejection
 
----
+| ID | Rule |
+|---|---|
+| BR-APP-001 | Submission hanya dapat dilakukan dari `RESULT_READY` jika terdapat `selected_result` yang valid, terlepas dari source type-nya. |
+| BR-APP-002 | Submission mengubah request menjadi `WAITING_APPROVAL` dan mencatat audit event. |
+| BR-APP-003 | Hanya Manager yang dapat approve atau reject request `WAITING_APPROVAL`. |
+| BR-APP-004 | Rejection wajib memiliki alasan dan mengubah status menjadi `REJECTED`. |
+| BR-APP-005 | Approval mengubah status menjadi `APPROVED`; submission, approval, dan rejection dicatat secara append-only. |
+| BR-APP-006 | Request yang ditolak dapat direvisi dari `DRAFT` tanpa menghapus histori sebelumnya. |
 
-## 3. Master Data Rules
+## 9. Signature dan Contract
 
-### BR-MASTER-001 — Approved Master Data
+| ID | Rule |
+|---|---|
+| BR-SIGN-001 | Signature hanya dapat diberikan setelah approval dan hanya oleh Manager yang melakukan approval. |
+| BR-SIGN-002 | Sistem menyimpan `signed_by`, `signed_at`, `signer_name`, dan signature image opsional. |
+| BR-SIGN-003 | Setelah signing, data final tidak boleh diubah secara diam-diam. |
+| BR-CONTRACT-001 | Contract PDF hanya dapat dibuat dari request berstatus `SIGNED`. |
+| BR-CONTRACT-002 | Contract menggunakan request, approved selected result, approval, dan signature yang telah dibekukan. |
+| BR-CONTRACT-003 | Contract menyimpan version, private file reference, content snapshot, dan checksum SHA-256. |
+| BR-CONTRACT-004 | Perubahan material atau regeneration tidak boleh menimpa PDF lama; proses membuat versi baru atau mengulang approval. |
 
-Vendor dan product yang tersedia di sistem dianggap sudah melalui proses validasi bisnis di luar aplikasi.
+## 10. Lifecycle
 
-### BR-MASTER-002 — Active Product
-
-Product yang inactive tidak boleh digunakan untuk procurement baru.
-
-### BR-MASTER-003 — Active Vendor
-
-Vendor yang inactive tidak boleh digunakan sebagai kandidat fulfillment.
-
-### BR-MASTER-004 — Active Vendor Offer
-
-Vendor offer yang inactive tidak boleh digunakan dalam optimization.
-
-### BR-MASTER-005 — Historical Data
-
-Perubahan status vendor, product, atau vendor offer tidak boleh mengubah historical procurement yang sudah diproses.
-
----
-
-## 4. Vendor Offer Rules
-
-### BR-OFFER-001 — Vendor and Product Relation
-
-Setiap vendor offer harus terkait dengan satu vendor dan satu product.
-
-### BR-OFFER-002 — Valid Base Price
-
-HNA tidak boleh bernilai negatif.
-
-### BR-OFFER-003 — Valid Discount
-
-Discount harus berada pada rentang 0 sampai 100 persen.
-
-### BR-OFFER-004 — Valid Purchase Price
-
-Net purchase price harus lebih besar dari 0 agar offer dapat digunakan dalam optimization.
-
-### BR-OFFER-005 — Price Calculation
-
-Net purchase price dihitung dari HNA dan discount.
-
-```text
-net_purchase_price =
-HNA - (HNA × discount_percent / 100)
+```mermaid
+stateDiagram-v2
+    [*] --> DRAFT
+    DRAFT --> MANUAL_DRAFT: Susun manual
+    DRAFT --> OPTIMIZING: Jalankan optimizer
+    MANUAL_DRAFT --> RESULT_READY: Result valid
+    MANUAL_DRAFT --> OPTIMIZING: Beralih ke optimizer
+    OPTIMIZING --> RESULT_READY: Completed
+    OPTIMIZING --> OPTIMIZATION_FAILED: Failed
+    OPTIMIZATION_FAILED --> OPTIMIZING: Retry
+    RESULT_READY --> RESULT_READY: Select / customize
+    RESULT_READY --> WAITING_APPROVAL: Submit
+    WAITING_APPROVAL --> APPROVED: Approve
+    WAITING_APPROVAL --> REJECTED: Reject
+    REJECTED --> DRAFT: Revisi
+    APPROVED --> SIGNED: Sign
+    SIGNED --> GENERATED: Generate PDF
 ```
 
-### BR-OFFER-006 — Master Data Update
-
-Admin dapat memperbarui vendor offer selama data tersebut masih digunakan sebagai master data aktif.
-
-Perubahan vendor offer tidak boleh otomatis mengubah hasil optimization yang sudah tersimpan.
-
----
-
-## 5. Candidate Combination Rules
-
-### BR-COMB-001 — Combination Purpose
-
-Candidate combination merepresentasikan alternatif cara memenuhi procurement request.
-
-### BR-COMB-002 — Request Must Remain Unchanged
-
-Perubahan candidate combination tidak boleh mengubah procurement request asli.
-
-### BR-COMB-003 — Eligible Data Only
-
-Candidate combination hanya boleh menggunakan:
-
-* active vendor,
-* active product,
-* active vendor offer.
-
-### BR-COMB-004 — Combination Editability
-
-Admin dapat mengubah candidate combination sebelum hasil final dikirim untuk approval.
-
-### BR-COMB-005 — Traceability
-
-Setiap candidate combination harus dapat ditelusuri ke procurement request dan vendor offer yang digunakan.
-
----
-
-## 6. Optimization Rules
-
-### BR-OPT-001 — Background Processing
-
-Optimization harus dijalankan sebagai background job.
-
-### BR-OPT-002 — No Concurrent Duplicate Run
-
-Sistem tidak boleh menjalankan lebih dari satu optimization aktif untuk procurement request yang sama pada waktu yang sama.
-
-### BR-OPT-003 — Optimization Input
-
-Optimizer hanya boleh menggunakan data yang valid dan aktif pada saat optimization dijalankan.
-
-### BR-OPT-004 — Optimization Scope
-
-Optimizer mengevaluasi candidate combination.
-
-Optimizer tidak boleh mengubah kebutuhan procurement dari instansi.
-
-### BR-OPT-005 — Optimization Result
-
-Setiap optimization run harus menghasilkan status yang jelas:
-
-* PENDING
-* RUNNING
-* COMPLETED
-* FAILED
-
-### BR-OPT-006 — Failure Handling
-
-Jika optimization gagal:
-
-* status run harus menjadi `FAILED`,
-* error harus dicatat,
-* Procurement Staff dapat menjalankan ulang optimization.
-
-### BR-OPT-007 — Snapshot Result
-
-Hasil optimization harus disimpan sebagai snapshot.
-
-Snapshot minimal menyimpan:
-
-* vendor,
-* product,
-* quantity,
-* selling price,
-* HNA,
-* discount,
-* net purchase price,
-* total purchase,
-* total selling price,
-* gross profit,
-* margin.
-
-### BR-OPT-008 — Historical Result Protection
-
-Perubahan vendor offer setelah optimization selesai tidak boleh mengubah optimization result lama.
-
-### BR-OPT-009 — Re-run Optimization
-
-Optimization dapat dijalankan ulang sebelum procurement dikirim untuk approval.
-
-Run baru menghasilkan result baru dan tidak menimpa historical run sebelumnya secara diam-diam.
-
----
-
-## 7. Optimization Calculation Rules
-
-### BR-CALC-001 — Total Selling Price
-
-```text
-total_selling_price =
-quantity × target_unit_price
-```
-
-### BR-CALC-002 — Total Purchase
-
-```text
-total_purchase =
-quantity × net_purchase_price
-```
-
-### BR-CALC-003 — Gross Profit
-
-```text
-gross_profit =
-total_selling_price - total_purchase
-```
-
-### BR-CALC-004 — Margin
-
-```text
-margin_percent =
-(gross_profit / total_selling_price) × 100
-```
-
-### BR-CALC-005 — Zero Selling Price
-
-Jika total selling price bernilai 0, margin tidak boleh menyebabkan division-by-zero error.
-
----
-
-## 8. Notification Rules
-
-### BR-NOTIF-001 — Optimization Completion Notification
-
-Setelah optimization selesai, Procurement Staff yang menjalankan proses harus menerima in-app notification.
-
-### BR-NOTIF-002 — Failure Notification
-
-Jika optimization gagal, Procurement Staff harus dapat mengetahui bahwa proses gagal.
-
-### BR-NOTIF-003 — Notification Traceability
-
-Notification harus dapat dikaitkan dengan procurement request atau optimization run terkait.
-
----
-
-## 9. Approval Rules
-
-### BR-APP-001 — Submission Eligibility
-
-Procurement hanya dapat dikirim untuk approval jika:
-
-* optimization berhasil,
-* terdapat selected result,
-* status procurement memungkinkan submission.
-
-### BR-APP-002 — Waiting Approval State
-
-Setelah submit, procurement harus masuk ke status `WAITING_APPROVAL`.
-
-### BR-APP-003 — Manager Authority
-
-Hanya user dengan role Manager yang dapat melakukan approve atau reject.
-
-### BR-APP-004 — Approval Eligibility
-
-Manager hanya dapat approve procurement yang berada pada status `WAITING_APPROVAL`.
-
-### BR-APP-005 — Rejection Eligibility
-
-Manager hanya dapat reject procurement yang berada pada status `WAITING_APPROVAL`.
-
-### BR-APP-006 — Rejection Reason
-
-Manager wajib memberikan alasan ketika melakukan rejection.
-
-### BR-APP-007 — Approval Audit
-
-Setiap submission, approval, dan rejection harus dicatat.
-
-Minimal mencatat:
-
-* action,
-* actor,
-* timestamp,
-* note jika ada.
-
----
-
-## 10. Electronic Signature Rules
-
-### BR-SIGN-001 — Signature Eligibility
-
-Contract hanya dapat ditandatangani setelah procurement disetujui.
-
-### BR-SIGN-002 — Signer
-
-Hanya Manager yang melakukan approval yang dapat memberikan electronic signature.
-
-### BR-SIGN-003 — Signature Metadata
-
-Saat signing, sistem harus menyimpan minimal:
-
-* signed_by,
-* signed_at,
-* signer_name.
-
-### BR-SIGN-004 — Signature Image
-
-Signature image bersifat opsional untuk MVP.
-
-### BR-SIGN-005 — Signed Contract Immutability
-
-Setelah contract ditandatangani, data contract final tidak boleh diubah secara diam-diam.
-
----
-
-## 11. Contract Generation Rules
-
-### BR-CONTRACT-001 — PDF Eligibility
-
-Final contract PDF hanya dapat dibuat setelah contract ditandatangani.
-
-### BR-CONTRACT-002 — Approved Result
-
-Contract harus menggunakan optimization result yang telah disetujui.
-
-### BR-CONTRACT-003 — Contract Content
-
-Contract final harus merepresentasikan:
-
-* procurement request,
-* selected optimization result,
-* vendor information,
-* price snapshot,
-* approval information,
-* signature information.
-
-### BR-CONTRACT-004 — Historical Consistency
-
-Perubahan master data setelah contract dibuat tidak boleh mengubah isi contract final.
-
-### BR-CONTRACT-005 — Regeneration
-
-Jika terjadi perubahan material setelah signing, sistem tidak boleh mengubah PDF lama secara diam-diam.
-
-Perubahan harus menghasilkan versi baru atau proses approval ulang.
-
----
-
-## 12. Procurement Status Rules
-
-Lifecycle utama:
-
-```text
-DRAFT
-  ↓
-OPTIMIZING
-  ↓
-OPTIMIZED
-  ↓
-WAITING_APPROVAL
-  ↓
-APPROVED
-  ↓
-SIGNED
-  ↓
-GENERATED
-```
-
-Failure state:
-
-```text
-OPTIMIZING
-    ↓
-OPTIMIZATION_FAILED
-```
-
-Rejection state:
-
-```text
-WAITING_APPROVAL
-        ↓
-     REJECTED
-```
-
-### BR-STATUS-001
-
-Procurement baru dibuat dengan status `DRAFT`.
-
-### BR-STATUS-002
-
-Procurement masuk ke `OPTIMIZING` ketika background optimization dimulai.
-
-### BR-STATUS-003
-
-Procurement menjadi `OPTIMIZED` hanya setelah optimization berhasil.
-
-### BR-STATUS-004
-
-Procurement menjadi `WAITING_APPROVAL` setelah berhasil disubmit.
-
-### BR-STATUS-005
-
-Procurement menjadi `APPROVED` setelah disetujui Manager.
-
-### BR-STATUS-006
-
-Procurement menjadi `SIGNED` setelah Manager memberikan electronic signature.
-
-### BR-STATUS-007
-
-Procurement menjadi `GENERATED` setelah final contract PDF berhasil dibuat.
-
----
-
-## 13. Auditability Rules
-
-Sistem harus memungkinkan proses utama ditelusuri.
-
-Minimal harus dapat diketahui:
-
-* siapa membuat procurement request,
-* siapa menjalankan optimization,
-* kapan optimization dijalankan,
-* result mana yang dipilih,
-* siapa submit approval,
-* siapa approve atau reject,
-* kapan approval dilakukan,
-* siapa melakukan signing,
-* kapan signing dilakukan,
-* kapan contract PDF dibuat.
-
----
-
-## 14. MVP Assumptions
-
-Untuk MVP:
-
-* vendor onboarding berada di luar sistem,
-* MoU management berada di luar sistem,
-* vendor dan product diinput manual,
-* notification hanya in-app,
-* electronic signature bersifat sederhana,
-* tidak menggunakan cryptographic certificate,
-* satu level Manager approval sudah cukup,
-* optimizer bekerja pada candidate combination yang tersedia,
-* advanced optimization belum menjadi fokus utama.
+`RESULT_READY` digunakan untuk result valid dari jalur manual maupun optimizer. Istilah `OPTIMIZED` tidak digunakan sebagai status procurement.
+
+## 11. Auditability
+
+Sistem minimal mencatat actor dan timestamp untuk pembuatan request/result, optimization, pemilihan result, submission, approval/rejection, signing, dan contract generation. Audit event status bersifat append-only dan menyimpan `from_status`, `to_status`, serta note jika diperlukan.
+
+## 12. Traceability ke Product Requirements
+
+| Product requirement | Business rules |
+|---|---|
+| PRD-001 | BR-ACCESS-001 |
+| PRD-002 | BR-MASTER-001–004, BR-OFFER-001–004 |
+| PRD-003 | BR-REQ-001–005 |
+| PRD-004 | BR-RESULT-001–004, BR-CALC-001–005 |
+| PRD-005 | BR-OPT-001–009, BR-RESULT-001–004 |
+| PRD-006 | BR-RESULT-005–007 |
+| PRD-007 | BR-NOTIF-001–003 |
+| PRD-008 | BR-APP-001–006 |
+| PRD-009 | BR-SIGN-001–003 |
+| PRD-010 | BR-CONTRACT-001–004, BR-MASTER-004, Bagian 11 |
