@@ -20,7 +20,6 @@ Istilah domain dan identifier yang muncul di kode—seperti `OptimizationRun`, `
 | Admin | Mengelola product, vendor, dan vendor offer | Tidak mengubah kebutuhan asli instansi demi hasil optimizer |
 | Procurement Staff | Membuat request, menyusun kombinasi secara manual atau melalui optimizer, menyesuaikan hasil, dan mengajukan approval | Tidak dapat mengubah kebutuhan asli saat menyusun hasil, approve, atau menandatangani kontrak |
 | Manager | Review, approve/reject, dan menandatangani kontrak | Hanya dapat memproses request berstatus sesuai |
-| Background Worker | Menjalankan optimasi dan pembuatan artefak secara asinkron | Tidak berinteraksi langsung dengan pengguna |
 
 ### 2.1 Peran Optimizer
 
@@ -30,7 +29,7 @@ Optimizer adalah alat bantu keputusan, bukan pengambil keputusan final. Fungsiny
 * mencari vendor offer yang eligible untuk setiap item;
 * membentuk dan mengevaluasi berbagai kombinasi vendor offer;
 * menghitung total purchase, total selling, gross profit, dan margin setiap kombinasi;
-* menolak kombinasi yang tidak memenuhi aturan bisnis; dan
+* menolak kombinasi yang tidak memenuhi aturan bisnis;
 * memberi ranking serta merekomendasikan kombinasi terbaik berdasarkan objective optimizer.
 
 Procurement Staff tetap menentukan result final. Staff dapat memilih rekomendasi optimizer apa adanya, mengustomisasinya, atau menggunakan jalur manual sejak awal. Manager tetap menjadi pihak yang menyetujui atau menolak result final.
