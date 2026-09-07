@@ -1,120 +1,190 @@
 # Product Overview
 
-## Mini Procurement Contract Optimizer
+## Medical Procurement Bid Optimizer
 
 > Status: Acuan produk MVP<br>
 > Terakhir diperbarui: 28 Agustus 2026
 
 ## 1. Ringkasan
 
-Mini Procurement Contract Optimizer adalah aplikasi web berbasis Django untuk memproses kebutuhan procurement sebuah instansi menggunakan vendor, product, dan vendor offer yang tersedia pada master data internal.
-
-Sistem membantu Procurement Staff menyusun result secara manual atau melalui optimizer, memilih result final, meminta approval Manager, mencatat electronic signature sederhana, dan menghasilkan kontrak PDF.
-
-Vendor dan product dianggap sudah melalui validasi bisnis di luar aplikasi.
+Medical Procurement Bid Optimizer adalah MVP dari aplikasi web berbasis Django yang membantu perusahaan menyusun penawaran untuk tender pengadaan alat kesehatan dan obat-obatan. Aplikasi ini membandingkan harga dan ketersediaan barang dari berbagai supplier, menentukan kombinasi pengadaan yang optimal, serta menghitung biaya dan margin keuntungan sebelum penawaran difinalisasi dan siap diajukan kepada instansi.
 
 ## 2. Tujuan Produk
 
-MVP bertujuan untuk:
+Aplikasi ini bertujuan untuk:
 
-* menjaga kebutuhan asli instansi sebagai source of truth;
-* menghitung biaya, gross profit, dan margin secara konsisten;
-* memberi rekomendasi kombinasi vendor offer berdasarkan gross profit;
-* menyediakan workflow review, approval, signing, dan kontrak yang dapat ditelusuri.
+* Membantu perusahaan menyusun penawaran tender pengadaan alat kesehatan dan obat-obatan dengan merekomendasikan kombinasi penawaran supplier berdasarkan ketersediaan barang, biaya pengadaan, dan estimasi laba kotor (gross profit).
+* Menyediakan alur kerja penyusunan, peninjauan, persetujuan, penandatanganan, dan finalisasi penawaran tender yang terdokumentasi serta dapat ditelusuri.
+* Membantu pengguna mengevaluasi kelayakan finansial suatu penawaran sebelum penawaran tersebut difinalisasi.
 
 ## 3. Pengguna dan Tanggung Jawab
 
-| Role | Tanggung jawab |
-|---|---|
-| Admin | Mengelola master product, vendor, dan vendor offer |
-| Procurement Staff | Membuat request, menyusun atau memilih result, menjalankan optimizer, melakukan customization, dan submit untuk approval |
-| Manager | Review, approve/reject, dan menandatangani request yang disetujui |
+| Role              | Tanggung Jawab                                                                                                                                                                                       |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Admin             | Mengelola  product, supplier, dan supplier offer.                                                                                                                                              |
+| Procurement Staff | Membuat tender request berdasarkan kebutuhan instansi, menyusun result secara manual atau menggunakan optimizer, melakukan kustomisasi, memilih hasil, dan mengajukannya untuk persetujuan internal. |
+| Manager           | Melakukan peninjauan, persetujuan/penolakan terhadap penawaran yang diajukan Procurement Staff, serta memberikan tanda tangan elektronik terhadap penawaran yang telah disetujui.                        |
 
-Admin tidak mengubah kebutuhan instansi atau menentukan result final. Optimizer memberikan rekomendasi; keputusan result final tetap berada pada Procurement Staff dan Manager.
+Optimizer hanya memberikan rekomendasi kombinasi dari alat/oba yang ditawarkan supplier. Keputusan mengenai hasil akhir  yang digunakan tetap berada pada Procurement Staff dan Manager melalui workflow review dan approval.
+
+---
 
 ## 4. Konsep Utama
 
-### Procurement Request
+### Tender Request
 
-Procurement request menyimpan kebutuhan asli instansi, termasuk product, quantity, dan target unit price. Data ini tidak boleh diubah hanya untuk memperoleh hasil yang lebih baik.
+Tender request menyimpan kebutuhan asli yang diterbitkan oleh instansi, termasuk product, quantity, spesifikasi yang relevan, dan informasi harga target apabila tersedia.
+
+Tender request merupakan **source of truth** terhadap kebutuhan instansi dan tidak boleh dimodifikasi hanya untuk memperoleh hasil optimasi yang lebih menguntungkan.
 
 ### Procurement Result
 
-Procurement result menyimpan cara memenuhi seluruh request item menggunakan vendor offer. Result memiliki salah satu sumber:
+Procurement result merepresentasikan cara memenuhi seluruh item pada tender request menggunakan satu atau lebih supplier offer.
+
+Result memiliki salah satu sumber:
 
 * `MANUAL`: disusun langsung oleh Procurement Staff;
 * `OPTIMIZER`: dihasilkan dan diberi ranking oleh optimizer;
 * `CUSTOMIZED`: result baru yang diturunkan dari result sebelumnya.
 
-Customization tidak menimpa result sumber. Procurement Staff memilih satu result valid sebagai `selected_result` sebelum submission.
+Customization tidak mengubah atau menimpa result sumber.
+
+Procurement Staff dapat membandingkan beberapa result dan memilih satu result valid sebagai `selected_result` sebelum penawaran diajukan untuk approval.
 
 ### Optimization Run
 
-Optimization run adalah proses background yang membentuk dan mengevaluasi alternatif vendor offer berdasarkan request dan master data aktif. Setiap run menyimpan input, hasil kalkulasi, ranking, dan status sebagai snapshot historis.
+Optimization run merupakan proses background yang membentuk dan mengevaluasi alternatif kombinasi supplier offer berdasarkan tender request dan data supplier offer yang tersedia.
+
+Setiap run menyimpan informasi input, hasil kalkulasi, ranking, status proses, dan referensi terhadap result yang dihasilkan sehingga proses optimasi dapat ditelusuri secara historis.
+
+### Bid Proposal
+
+Bid proposal merupakan penawaran tender yang disusun Perusahaan B untuk instansi berdasarkan tender request dan `selected_result`.
+
+Bid proposal menyimpan nilai penawaran kepada instansi, estimasi biaya pengadaan, gross profit, serta informasi komersial lain yang diperlukan.
+
+Setelah memperoleh approval dan electronic signature internal, bid proposal dapat difinalisasi dan dibuat menjadi dokumen PDF yang siap diajukan kepada instansi melalui proses eksternal.
+
+---
 
 ## 5. Alur Utama
 
 ```mermaid
 flowchart TD
-    A[Create / Revise Procurement Request] --> B{Pilih metode}
-    B -->|Manual| C[Susun Manual Result]
-    B -->|Otomatis| D[Run Optimizer]
-    D --> E[Notification]
-    C --> F[Result Ready]
+    Z([Mulai]) --> A
+    A[Masukan Tender Request dari Instansi] --> B{Pilih Metode Penyusunan}
+
+    B -->|Manual| C[Susun Manual]
+    B -->|Optimizer| D[Jalankan Optimizer]
+
+    D --> E[Notifikasi untuk Optimisasi yang Selesai]
+
+    C --> F[/Hasil Siap/]
     E --> F
-    F --> G[Review / Customize / Select]
-    G --> H[Submit for Approval]
-    H --> I{Manager Decision}
-    I -->|Reject| A
-    I -->|Approve| J[Electronic Signature]
-    J --> K[Generate Contract PDF]
+
+    F --> G[Tinjau / Kustomisasi / Pilih Hasil]
+
+    G --> H[Siapkan Bid Proposal]
+    H --> I[Kirim untuk Persetujuan Internal]
+
+    I --> J{Keputusan Manajer}
+
+    J -->|Tolak| K{dengan revisi ?}
+    K -->|Ya| G
+    K -->|Tidak| O 
+
+    J -->|Setujui| L[Tanda Tangan Elektronik]
+
+    L --> M[Finalisasi Bid Proposal]
+    M --> N[Buat Bid Proposal dalam PDF]
+    N --> O([Selesai])
 ```
+
+Pengajuan dokumen kepada instansi berada di luar scope aplikasi.
+
+---
 
 ## 6. Product Requirements
 
-| ID | Requirement |
-|---|---|
-| PRD-001 | Sistem menyediakan authentication dan akses berbasis role untuk Admin, Procurement Staff, dan Manager. |
-| PRD-002 | Admin dapat mengelola master product, vendor, dan vendor offer tanpa mengubah histori transaksi. |
-| PRD-003 | Procurement Staff dapat membuat request dengan minimal satu item valid; kebutuhan asli tetap menjadi source of truth. |
-| PRD-004 | Procurement Staff dapat menyusun result manual yang mencakup seluruh request item. |
-| PRD-005 | Procurement Staff dapat menjalankan optimizer secara background dan menerima ranked result. |
-| PRD-006 | Procurement Staff dapat review, customize, dan memilih satu result final tanpa menimpa result sumber. |
-| PRD-007 | Sistem memberikan in-app notification untuk hasil optimization dan rejection. |
-| PRD-008 | Procurement Staff dapat submit result valid; Manager dapat approve atau reject dengan alasan. |
-| PRD-009 | Manager yang melakukan approval dapat memberikan electronic signature sederhana. |
-| PRD-010 | Sistem menghasilkan kontrak PDF dari data yang disetujui dan ditandatangani, serta menjaga audit trail dan snapshot historis. |
+| ID      | Requirement                                                                                                                                        |
+| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PRD-001 | Sistem menyediakan authentication dan role-based access untuk Admin, Procurement Staff, dan Manager.                                               |
+| PRD-002 | Admin dapat mengelola master product, supplier, dan supplier offer tanpa mengubah histori transaksi yang telah menggunakan data tersebut.          |
+| PRD-003 | Procurement Staff dapat mencatat tender request berdasarkan kebutuhan yang diterbitkan instansi.            |
+| PRD-004 | Procurement Staff dapat menyusun procurement result manual yang memenuhi seluruh request item.                                                     |
+| PRD-005 | Procurement Staff dapat menjalankan optimizer secara background dan memperoleh ranked procurement result.                                          |
+| PRD-006 | Procurement Staff dapat melakukan review, customization, dan memilih satu result tanpa menimpa result sumber.                                      |
+| PRD-007 | Sistem memberikan in-app notification ketika optimization selesai atau suatu bid proposal ditolak.                                                 |
+| PRD-008 | Procurement Staff dapat membuat bid proposal berdasarkan selected result dan mengajukannya untuk approval internal.                                |
+| PRD-009 | Manager dapat melakukan review serta approve atau reject bid proposal dengan alasan.                                                               |
+| PRD-010 | Manager dapat memberikan tanda tangan elektronik sederhana terhadap bid proposal yang telah disetujui.                                                |
+| PRD-011 | Sistem dapat memfinalisasi dan menghasilkan PDF bid proposal berdasarkan data yang telah disetujui dan ditandatangani.                             |
+| PRD-012 | Sistem menjaga audit trail dan historical snapshot sehingga perubahan master data tidak mengubah result atau bid proposal yang telah difinalisasi. |
+
+---
 
 ## 7. Scope MVP
 
-Termasuk:
+### Termasuk
 
 * authentication dan role-based access;
-* master product, vendor, dan vendor offer;
-* procurement request dan request item;
-* manual, optimized, dan customized result;
-* background optimization dan in-app notification;
-* approval, rejection, dan electronic signature sederhana;
-* contract PDF, snapshot, dan audit trail.
+* master product, supplier, dan supplier offer;
+* tender request dan tender request item;
+* manual, optimized, dan customized procurement result;
+* background optimization;
+* ranked recommendation;
+* in-app notification;
+* selected result;
+* bid proposal;
+* internal approval dan rejection;
+* electronic signature sederhana;
+* finalisasi bid proposal;
+* bid proposal PDF;
+* historical snapshot;
+* audit trail.
 
-Tidak termasuk:
+### Tidak termasuk
 
-* vendor onboarding, qualification, discovery, dan negotiation;
-* OCR, fuzzy matching, dan advanced or multi-objective optimization;
-* multi-level approval dan cryptographic digital signature;
+* supplier onboarding, qualification, discovery, dan negotiation;
+* integrasi langsung dengan portal tender atau sistem rumah sakit;
+* OCR dan fuzzy product matching;
+* advanced atau multi-objective optimization;
+* multi-level approval;
+* cryptographic digital signature;
 * email atau WhatsApp notification;
-* payment, accounting, inventory, shipping, dan ERP integration.
+* procurement contract setelah tender dimenangkan;
+* payment;
+* accounting;
+* inventory;
+* shipping;
+* ERP integration.
+
+---
 
 ## 8. Prinsip Produk
 
-* **Preserve the request:** optimizer dan editor result tidak mengubah kebutuhan asli.
-* **Separate requirement from solution:** request menjelaskan kebutuhan; result menjelaskan pemenuhannya.
-* **Human-controlled decision:** ranking optimizer adalah rekomendasi, bukan keputusan final.
-* **Traceable history:** result, approval, signature, dan kontrak dapat ditelusuri ke actor dan data sumber.
-* **Controlled finalization:** kontrak hanya dibuat setelah approval dan signature.
+* **Preserve the tender request:** optimizer dan result editor tidak mengubah kebutuhan asli instansi.
+* **Separate requirement from sourcing solution:** tender request menjelaskan kebutuhan; procurement result menjelaskan bagaimana kebutuhan tersebut dapat dipenuhi menggunakan supplier offer.
+* **Separate sourcing result from bid proposal:** procurement result menentukan sumber pengadaan, sedangkan bid proposal merupakan penawaran komersial Perusahaan B kepada instansi.
+* **Human-controlled decision:** ranking optimizer merupakan rekomendasi, bukan keputusan final.
+* **Immutable historical context:** perubahan product, supplier, atau supplier offer tidak boleh mengubah result dan bid proposal historis.
+* **Traceable history:** optimization run, result, selection, approval, rejection, signature, dan finalisasi dapat ditelusuri ke actor dan data sumber.
+* **Controlled finalization:** bid proposal hanya dapat difinalisasi setelah memenuhi workflow approval dan signature yang diperlukan.
+
+---
 
 ## 9. Kriteria Keberhasilan
 
-MVP berhasil jika alur manual dan optimizer dapat diselesaikan end-to-end, kalkulasi konsisten, permission dan status transition diterapkan di server, serta perubahan master data tidak mengubah result atau kontrak historis.
+MVP dianggap berhasil apabila:
 
-Traceability requirement terhadap business rules, user flows, dan komponen arsitektur dijelaskan pada dokumen 02–04.
+* alur manual maupun optimizer dapat diselesaikan secara end-to-end;
+* seluruh kebutuhan pada tender request dapat divalidasi terhadap procurement result;
+* optimizer menghasilkan rekomendasi yang konsisten berdasarkan supplier offer yang tersedia;
+* kalkulasi procurement cost, bid value, dan gross profit konsisten;
+* permission dan status transition ditegakkan di sisi server;
+* selected result dapat ditelusuri ke supplier offer yang menjadi sumbernya;
+* perubahan master data tidak mengubah procurement result atau bid proposal historis;
+* bid proposal yang telah disetujui dan ditandatangani dapat difinalisasi menjadi PDF;
+* seluruh aktivitas penting memiliki audit trail.
+
+Traceability antara requirement, business rules, user flow, domain model, dan komponen arsitektur dijelaskan pada dokumen 02–04.
