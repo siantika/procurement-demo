@@ -1,0 +1,60 @@
+@startuml
+!pragma layout smetana
+title System Context — Medical Procurement Bid Optimizer
+
+left to right direction
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #475569
+skinparam ArrowThickness 1.2
+skinparam actor {
+  BackgroundColor #DBEAFE
+  BorderColor #2563EB
+  FontColor #0F172A
+}
+skinparam rectangle {
+  BackgroundColor #F8FAFC
+  BorderColor #64748B
+  FontColor #0F172A
+}
+
+actor Admin
+actor "Procurement Staff" as Staff
+actor Manager
+
+rectangle "Medical Procurement\nBid Optimizer" as System #DCFCE7 {
+  rectangle "Aplikasi web internal untuk menyusun,\nmeninjau, menyetujui, menandatangani,\ndan memfinalisasi Bid Proposal" as Description #F0FDF4
+}
+
+actor "Supplier" as Supplier #F1F5F9
+rectangle "Instansi /\nPortal Tender" as Institution #F1F5F9
+
+Admin --> System : Kelola master\nProduct dan Supplier
+Staff --> System : Catat Tender Request dan Supplier Offer\nSusun, optimasi, dan pilih Procurement Result\nBuat dan submit Bid Proposal
+Manager --> System : Review Bid Proposal\nApprove / reject\nElectronic signature
+System --> Staff : Notifikasi proses\ndan Bid Proposal PDF
+
+Supplier ..> Staff : Memberikan informasi offer\n(di luar aplikasi)
+Institution ..> Staff : Menerbitkan informasi tender\n(di luar aplikasi)
+Staff ..> Institution : Mengajukan Bid Proposal PDF\n(di luar aplikasi)
+
+note bottom of System
+  Batas MVP berakhir pada finalisasi
+  dan pembuatan Bid Proposal PDF.
+
+  Tidak ada integrasi langsung dengan
+  Supplier atau Portal Tender.
+end note
+
+legend bottom
+  |= Warna |= Arti |
+  |<#DCFCE7> Hijau | Sistem dalam scope |
+  |<#DBEAFE> Biru | Pengguna internal |
+  |<#F1F5F9> Abu-abu | Pihak/sistem eksternal |
+endlegend
+
+@enduml
