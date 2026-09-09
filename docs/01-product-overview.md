@@ -3,7 +3,7 @@
 ## Medical Procurement Bid Optimizer
 
 > Status: Acuan produk MVP<br>
-> Terakhir diperbarui: 28 Agustus 2026
+> Terakhir diperbarui: 9 September 2026
 
 ## 1. Ringkasan
 
@@ -21,8 +21,8 @@ Aplikasi ini bertujuan untuk:
 
 | Role              | Tanggung Jawab                                                                                                                                                                                       |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Admin             | Mengelola  product, supplier, dan supplier offer.                                                                                                                                              |
-| Procurement Staff | Membuat tender request berdasarkan kebutuhan instansi, menyusun result secara manual atau menggunakan optimizer, melakukan kustomisasi, memilih hasil, dan mengajukannya untuk persetujuan internal. |
+| Admin             | Mengelola master product dan supplier.                                                                                                                                                              |
+| Procurement Staff | Mencatat dan mengelola supplier offer, membuat tender request berdasarkan kebutuhan instansi, menyusun result secara manual atau menggunakan optimizer, melakukan kustomisasi, memilih hasil, dan mengajukannya untuk persetujuan internal. |
 | Manager           | Melakukan peninjauan, persetujuan/penolakan terhadap penawaran yang diajukan Procurement Staff, serta memberikan tanda tangan elektronik terhadap penawaran yang telah disetujui.                        |
 
 Optimizer hanya memberikan rekomendasi kombinasi dari alat/oba yang ditawarkan supplier. Keputusan mengenai hasil akhir  yang digunakan tetap berada pada Procurement Staff dan Manager melalui workflow review dan approval.
@@ -109,7 +109,7 @@ Pengajuan dokumen kepada instansi berada di luar scope aplikasi.
 | ID      | Requirement                                                                                                                                        |
 | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | PRD-001 | Sistem menyediakan authentication dan role-based access untuk Admin, Procurement Staff, dan Manager.                                               |
-| PRD-002 | Admin dapat mengelola master product, supplier, dan supplier offer tanpa mengubah histori transaksi yang telah menggunakan data tersebut.          |
+| PRD-002 | Admin dapat mengelola master product dan supplier, sedangkan Procurement Staff dapat mencatat dan mengelola supplier offer, tanpa mengubah histori transaksi yang telah menggunakan data tersebut. |
 | PRD-003 | Procurement Staff dapat mencatat tender request berdasarkan kebutuhan yang diterbitkan instansi.            |
 | PRD-004 | Procurement Staff dapat menyusun procurement result manual yang memenuhi seluruh request item.                                                     |
 | PRD-005 | Procurement Staff dapat menjalankan optimizer secara background dan memperoleh ranked procurement result.                                          |
@@ -128,7 +128,8 @@ Pengajuan dokumen kepada instansi berada di luar scope aplikasi.
 ### Termasuk
 
 * authentication dan role-based access;
-* master product, supplier, dan supplier offer;
+* master product dan supplier;
+* supplier offer sebagai data komersial yang dikelola Procurement Staff;
 * tender request dan tender request item;
 * manual, optimized, dan customized procurement result;
 * background optimization;

@@ -3,7 +3,7 @@
 ## Medical Procurement Bid Optimizer
 
 > Status: Acuan domain model MVP  
-> Terakhir diperbarui: 8 September 2026
+> Terakhir diperbarui: 9 September 2026
 
 ---
 
@@ -255,6 +255,7 @@ Contoh:
 
 - calculate net purchase price;
 - determine eligibility.
+- create a new offer version when commercial information changes after historical use.
 
 ### Important Invariants
 
@@ -264,6 +265,7 @@ Contoh:
 - discount berada pada rentang yang diperbolehkan;
 - net purchase price harus positif agar offer eligible;
 - expired atau inactive offer tidak boleh digunakan untuk ProcurementResult baru.
+- commercial information pada offer yang telah digunakan secara historis tidak boleh ditimpa; perubahan dibuat sebagai SupplierOffer baru.
 
 ---
 

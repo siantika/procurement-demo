@@ -3,7 +3,7 @@
 ## Medical Procurement Bid Optimizer
 
 > Status: Acuan use case MVP
-> Terakhir diperbarui: 8 September 2026
+> Terakhir diperbarui: 9 September 2026
 
 ---
 
@@ -30,7 +30,7 @@ Dokumen ini tidak mendefinisikan ulang formula, calculation policy, invariant, a
 | Actor             | Tanggung Jawab                                                                                                                                                                                        |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Admin             | Mengelola master Product dan Supplier.                                                                                                                                                                |
-| Procurement Staff | Mencatat Tender Request dan Supplier Offer, menyusun dan memilih Procurement Result, menjalankan optimizer, menyusun Bid Proposal, menentukan target margin, dan melakukan submission untuk approval. |
+| Procurement Staff | Mencatat Tender Request, mencatat dan mengelola Supplier Offer, menyusun dan memilih Procurement Result, menjalankan optimizer, menyusun Bid Proposal, menentukan target margin, dan melakukan submission untuk approval. |
 | Manager           | Melakukan review, approve/reject, dan electronic signature terhadap Bid Proposal.                                                                                                                     |
 | System / Worker   | Menjalankan proses otomatis seperti optimization, calculation, notification, audit logging, dan PDF generation.                                                                                       |
 
@@ -237,7 +237,7 @@ Admin membuka halaman Supplier Management.
 
 #### Goal
 
-Mencatat harga dan informasi penawaran dari Supplier yang dapat digunakan dalam proses sourcing.
+Mencatat atau mengoreksi harga dan informasi penawaran dari Supplier yang dapat digunakan dalam proses sourcing tanpa merusak histori.
 
 #### Preconditions
 
@@ -247,19 +247,21 @@ Mencatat harga dan informasi penawaran dari Supplier yang dapat digunakan dalam 
 
 #### Trigger
 
-Procurement Staff menerima penawaran harga dari Supplier.
+Procurement Staff menerima penawaran harga baru atau koreksi penawaran dari Supplier.
 
 #### Main Flow
 
-1. Staff memilih Supplier.
-2. Staff memilih Product.
-3. Staff memasukkan base unit price.
-4. Staff memasukkan discount jika tersedia.
-5. Staff memasukkan available quantity jika tersedia.
-6. Staff memasukkan masa berlaku offer jika tersedia.
-7. Sistem memvalidasi data.
-8. Sistem menghitung net purchase price sesuai calculation policy.
-9. Sistem menyimpan Supplier Offer.
+1. Staff memilih membuat Supplier Offer baru atau membuka offer yang belum pernah digunakan untuk dikoreksi.
+2. Staff memilih Supplier.
+3. Staff memilih Product.
+4. Staff memasukkan base unit price.
+5. Staff memasukkan discount jika tersedia.
+6. Staff memasukkan available quantity jika tersedia.
+7. Staff memasukkan masa berlaku offer jika tersedia.
+8. Sistem memvalidasi data.
+9. Sistem menghitung net purchase price sesuai calculation policy.
+10. Sistem menyimpan Supplier Offer.
+11. Sistem mencatat pembuatan atau perubahan Supplier Offer pada audit trail.
 
 #### Alternative / Exception Flow
 
@@ -273,9 +275,15 @@ Procurement Staff menerima penawaran harga dari Supplier.
 1. Sistem menolak penggunaan Supplier atau Product tersebut.
 2. Staff harus memilih data aktif.
 
+**A3 — Perubahan offer yang telah digunakan secara historis**
+
+1. Sistem tidak mengizinkan informasi komersial offer lama ditimpa.
+2. Staff membuat Supplier Offer baru dan dapat menonaktifkan offer lama.
+
 #### Postconditions
 
-* Supplier Offer tersedia untuk manual sourcing dan optimizer jika eligible.
+* Supplier Offer baru atau hasil koreksi tersedia untuk manual sourcing dan optimizer jika eligible.
+* Supplier Offer historis yang digantikan tetap dapat ditelusuri.
 
 #### Related Requirements
 
@@ -283,7 +291,7 @@ Procurement Staff menerima penawaran harga dari Supplier.
 
 #### Related Business Rules
 
-* BR-OFFER-001–009
+* BR-OFFER-001–011
 * BR-CALC-001
 * BR-MONEY-001–005
 

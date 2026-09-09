@@ -3,7 +3,7 @@
 ## Medical Procurement Bid Optimizer
 
 > Status: Acuan aturan bisnis MVP
-> Terakhir diperbarui: 7 September 2026
+> Terakhir diperbarui: 9 September 2026
 
 ---
 
@@ -29,7 +29,7 @@ Business rules dalam dokumen ini menjadi acuan untuk memastikan bahwa:
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | BR-ACCESS-001 | Setiap tindakan hanya dapat dilakukan oleh role yang berwenang dan authorization tetap divalidasi di server.                                                |
 | BR-ACCESS-002 | Admin mengelola master `Product` dan `Supplier`.                                                                                                            |
-| BR-ACCESS-003 | Procurement Staff mencatat `TenderRequest`, `SupplierOffer`, menjalankan optimizer, memilih procurement result, dan menyusun `BidProposal`.                 |
+| BR-ACCESS-003 | Procurement Staff mencatat `TenderRequest`, mencatat dan mengelola `SupplierOffer`, menjalankan optimizer, memilih procurement result, dan menyusun `BidProposal`. |
 | BR-ACCESS-004 | Manager melakukan review, approval/rejection, dan electronic signature terhadap `BidProposal`.                                                              |
 | BR-MASTER-001 | Product dan supplier yang inactive tidak boleh digunakan untuk transaksi baru.                                                                              |
 | BR-MASTER-002 | Master data yang pernah digunakan oleh transaksi historis tidak boleh dihapus dengan cara yang merusak histori.                                             |
@@ -77,6 +77,8 @@ Satu supplier dapat memberikan beberapa offer untuk product yang berbeda atau me
 | BR-OFFER-007 | Jika supplier offer memiliki masa berlaku, offer yang sudah expired tidak boleh digunakan untuk procurement result baru.               |
 | BR-OFFER-008 | Perubahan supplier offer tidak boleh mengubah procurement result atau optimization run historis yang telah menggunakan offer tersebut. |
 | BR-OFFER-009 | Supplier offer yang pernah digunakan secara historis tidak boleh dihapus dengan cara yang merusak traceability.                        |
+| BR-OFFER-010 | Supplier offer yang belum pernah digunakan dapat dikoreksi oleh Procurement Staff dan perubahan tersebut harus dicatat pada audit trail. |
+| BR-OFFER-011 | Perubahan informasi komersial pada supplier offer yang telah digunakan oleh optimization run atau procurement result harus dibuat sebagai supplier offer baru; offer lama dipertahankan dan dapat dinonaktifkan. |
 
 Untuk domain yang mencakup obat dan alat kesehatan, istilah generik `base_unit_price` digunakan. Untuk supplier obat, nilai tersebut dapat merepresentasikan harga dasar seperti HNA apabila relevan.
 
@@ -578,7 +580,7 @@ Tidak boleh melompati transition yang diwajibkan.
 | Product Requirement                                                               | Business Rules                                                                                                      |
 | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | PRD-001 — Authentication dan role-based access                                    | BR-ACCESS-001–004                                                                                                   |
-| PRD-002 — Pengelolaan product, supplier, dan supplier offer tanpa merusak histori | BR-MASTER-001–004, BR-OFFER-001–009                                                                                 |
+| PRD-002 — Admin mengelola Product/Supplier dan Procurement Staff mengelola Supplier Offer tanpa merusak histori | BR-ACCESS-002–003, BR-MASTER-001–004, BR-OFFER-001–011 |
 | PRD-003 — Pencatatan tender request dan preservation of source of truth           | BR-REQ-001–009                                                                                                      |
 | PRD-004 — Manual procurement result                                               | BR-RESULT-001–020, BR-CALC-001–004                                                                                  |
 | PRD-005 — Background optimizer dan ranked result                                  | BR-OPT-001–018                                                                                                      |
