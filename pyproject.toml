@@ -1,0 +1,36 @@
+[project]
+name = "medical-procurement-bid-optimizer"
+version = "0.1.0"
+description = "Demo MVP for medical procurement bid optimization"
+requires-python = ">=3.12,<3.13"
+
+dependencies = [
+    "Django>=6.0,<6.1",
+    "psycopg[binary]<4",
+    "celery[redis]<6",
+    "minio<8",
+    "WeasyPrint<70",
+    "Pillow<13",
+    "gunicorn<24",
+]
+
+[dependency-groups]
+dev = [
+    "coverage[toml]<8",
+    "ruff<1",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B"]
+
+[tool.coverage.run]
+branch = true
+source = ["apps", "config"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
