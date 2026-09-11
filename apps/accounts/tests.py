@@ -9,7 +9,8 @@ import uuid
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
-from django.test import TestCase
+from django.test import Client, TestCase
+from django.urls import reverse
 
 from .choices import UserRole
 from .forms import (
@@ -317,3 +318,128 @@ class AdminUserChangeFormTests(TestCase):
         )
         self.assertFalse(form.is_valid())
         self.assertIn("role", form.errors)
+
+
+class AccountViewTests(TestCase):
+    """Memeriksa kontrak HTTP dan session untuk account views."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.raw_password = "StrongPassword123!"
+        cls.user = User.objects.create_user(
+            username="view-user",
+            email="view-user@example.com",
+            password=cls.raw_password,
+            full_name="View User",
+            role=UserRole.PROCUREMENT_STAFF,
+        )
+
+    def login_data(self, **overrides):
+        data = {
+            "username": self.user.username,
+            "password": self.raw_password,
+        }
+        data.update(overrides)
+        return data
+
+    def test_login_page_uses_account_login_template(self):
+        response = self.client.get(reverse("accounts:login"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "accounts/login.html")
+        self.assertIsInstance(response.context["form"], LoginForm)
+
+    def test_valid_login_creates_session_and_redirects(self):
+        response = self.client.post(
+            reverse("accounts:login"),
+            data=self.login_data(),
+        )
+
+        self.assertRedirects(response, reverse("dashboard"))
+        self.assertEqual(
+            self.client.session["_auth_user_id"],
+            str(self.user.pk),
+        )
+
+    def test_login_honors_safe_next_url(self):
+        profile_url = reverse("accounts:profile")
+        response = self.client.post(
+            reverse("accounts:login"),
+            data={**self.login_data(), "next": profile_url},
+        )
+
+        self.assertRedirects(response, profile_url)
+
+    def test_invalid_login_does_not_create_session(self):
+        response = self.client.post(
+            reverse("accounts:login"),
+            data=self.login_data(password="WrongPassword123!"),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Username atau password salah.")
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_authenticated_user_is_redirected_from_login(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("accounts:login"))
+
+        self.assertRedirects(response, reverse("dashboard"))
+
+    def test_anonymous_user_is_redirected_from_profile(self):
+        profile_url = reverse("accounts:profile")
+
+        response = self.client.get(profile_url)
+
+        login_url = reverse("accounts:login")
+        self.assertRedirects(
+            response,
+            f"{login_url}?next={profile_url}",
+        )
+
+    def test_authenticated_user_can_open_profile(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("accounts:profile"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "accounts/profile.html")
+        self.assertEqual(response.context["user"], self.user)
+
+    def test_post_logout_clears_session_and_redirects(self):
+        self.client.force_login(self.user)
+        self.assertIn("_auth_user_id", self.client.session)
+
+        response = self.client.post(reverse("accounts:logout"))
+
+        self.assertRedirects(response, reverse("accounts:login"))
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_get_logout_is_not_allowed(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("accounts:logout"))
+
+        self.assertEqual(response.status_code, 405)
+        self.assertIn("POST", response.headers["Allow"])
+
+    def test_login_post_without_csrf_is_rejected(self):
+        csrf_client = Client(enforce_csrf_checks=True)
+
+        response = csrf_client.post(
+            reverse("accounts:login"),
+            data=self.login_data(),
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertNotIn("_auth_user_id", csrf_client.session)
+
+    def test_logout_post_without_csrf_is_rejected(self):
+        csrf_client = Client(enforce_csrf_checks=True)
+        csrf_client.force_login(self.user)
+
+        response = csrf_client.post(reverse("accounts:logout"))
+
+        self.assertEqual(response.status_code, 403)
+        self.assertIn("_auth_user_id", csrf_client.session)
