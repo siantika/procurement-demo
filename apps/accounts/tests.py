@@ -8,7 +8,8 @@ import uuid
 
 from django.contrib import admin as django_admin
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
+from django.contrib.auth.models import AnonymousUser
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError, transaction
 from django.test import Client, RequestFactory, TestCase
 from django.urls import reverse
@@ -19,6 +20,13 @@ from .forms import (
     AdminUserChangeForm,
     AdminUserCreationForm,
     LoginForm,
+)
+from .policies import (
+    require_active_user,
+    require_admin,
+    require_manager,
+    require_procurement_staff,
+    require_role,
 )
 
 User = get_user_model()
@@ -595,3 +603,87 @@ class AccountUserAdminTests(TestCase):
         user.role = UserRole.MANAGER
         self.user_admin.save_model(request, user, form=None, change=True)
         self.assertFalse(user.is_staff)
+
+
+class AccountPolicyTests(TestCase):
+    """Memeriksa authorization berdasarkan status dan role bisnis."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.users = {
+            role: User.objects.create_user(
+                username=f"policy-{role.lower()}",
+                email=f"policy-{role.lower()}@example.com",
+                password="StrongPassword123!",
+                full_name=f"Policy {role.label}",
+                role=role,
+            )
+            for role in UserRole
+        }
+
+    def test_require_active_user_returns_active_user(self):
+        user = self.users[UserRole.PROCUREMENT_STAFF]
+
+        result = require_active_user(user)
+
+        self.assertIs(result, user)
+
+    def test_require_active_user_rejects_anonymous_user(self):
+        with self.assertRaises(PermissionDenied):
+            require_active_user(AnonymousUser())
+
+    def test_require_active_user_rejects_inactive_user(self):
+        user = self.users[UserRole.MANAGER]
+        user.is_active = False
+
+        with self.assertRaises(PermissionDenied):
+            require_active_user(user)
+
+    def test_require_role_returns_user_with_matching_role(self):
+        user = self.users[UserRole.MANAGER]
+
+        result = require_role(user, UserRole.MANAGER)
+
+        self.assertIs(result, user)
+
+    def test_require_role_rejects_different_role(self):
+        user = self.users[UserRole.PROCUREMENT_STAFF]
+
+        with self.assertRaises(PermissionDenied):
+            require_role(user, UserRole.ADMIN)
+
+    def test_role_helpers_accept_their_corresponding_role(self):
+        cases = (
+            (require_admin, UserRole.ADMIN),
+            (require_procurement_staff, UserRole.PROCUREMENT_STAFF),
+            (require_manager, UserRole.MANAGER),
+        )
+
+        for policy, role in cases:
+            with self.subTest(policy=policy.__name__, role=role):
+                user = self.users[role]
+                self.assertIs(policy(user), user)
+
+    def test_role_helpers_reject_other_roles(self):
+        cases = (
+            (require_admin, UserRole.MANAGER),
+            (require_procurement_staff, UserRole.ADMIN),
+            (require_manager, UserRole.PROCUREMENT_STAFF),
+        )
+
+        for policy, role in cases:
+            with self.subTest(policy=policy.__name__, role=role):
+                with self.assertRaises(PermissionDenied):
+                    policy(self.users[role])
+
+    def test_superuser_does_not_bypass_business_role(self):
+        superuser = User.objects.create_superuser(
+            username="policy-superuser",
+            email="policy-superuser@example.com",
+            password="StrongPassword123!",
+            full_name="Policy Superuser",
+            role=UserRole.MANAGER,
+        )
+
+        with self.assertRaises(PermissionDenied):
+            require_admin(superuser)
