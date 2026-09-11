@@ -1,32 +1,43 @@
+{% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-    <title>ERP Farmacy</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Procurement ERP{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
 </head>
 <body>
-    <header>
-        <h2>ERP Farmacy</h2>
+    <header class="site-header">
+        <div class="header-inner">
+            <a class="brand" href="{% url 'dashboard' %}">
+                <span class="brand-mark" aria-hidden="true">P</span>
+                <span>
+                    <strong>Procurement</strong>
+                    <small>Medical ERP</small>
+                </span>
+            </a>
 
-        <nav>
-            {% if user.is_authenticated %}
-                <a href="{% url 'dashboard' %}">Dashboard</a>
-                <a href="{% url 'accounts:profile' %}">Profile</a>
-
-                <form method="post" action="{% url 'accounts:logout' %}" style="display:inline;">
-                    {% csrf_token %}
-                    <button type="submit">Logout</button>
-                </form>
-            {% else %}
-                <a href="{% url 'accounts:login' %}">Login</a>
-            {% endif %}
-        </nav>
-
-        <hr>
+            <nav class="main-nav" aria-label="Navigasi utama">
+                {% if user.is_authenticated %}
+                    <a href="{% url 'dashboard' %}">Dashboard</a>
+                    <a href="{% url 'accounts:profile' %}">Profil</a>
+                    <form method="post"
+                          action="{% url 'accounts:logout' %}">
+                        {% csrf_token %}
+                        <button class="nav-button" type="submit">
+                            Keluar
+                        </button>
+                    </form>
+                {% else %}
+                    <a href="{% url 'accounts:login' %}">Masuk</a>
+                {% endif %}
+            </nav>
+        </div>
     </header>
 
-    <main>
-        {% block content %}
-        {% endblock %}
+    <main class="page-shell">
+        {% block content %}{% endblock %}
     </main>
 </body>
 </html>

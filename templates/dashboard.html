@@ -1,15 +1,42 @@
 {% extends "base.html" %}
 
+{% block title %}Dashboard · Procurement ERP{% endblock %}
+
 {% block content %}
-<h1>Dashboard</h1>
+<div class="page-heading dashboard-heading">
+    <div>
+        <span class="eyebrow">Ringkasan kerja</span>
+        <h1>Halo, {{ user.full_name }}.</h1>
+        <p>Pilih area kerja untuk memulai aktivitas pengadaan.</p>
+    </div>
+    <span class="status-badge">{{ user.get_role_display }}</span>
+</div>
 
-<p>Welcome, {{ user.username }}.</p>
-
-<ul>
-    <li>Products</li>
-    <li>Vendors</li>
-    <li>Procurement</li>
-    <li>Quotations</li>
-    <li>Optimization</li>
-</ul>
+<section class="module-grid" aria-label="Modul procurement">
+    <article class="card module-card">
+        <span class="module-icon" aria-hidden="true">PR</span>
+        <h2>Produk</h2>
+        <p>Kelola katalog dan spesifikasi produk medis.</p>
+    </article>
+    <article class="card module-card">
+        <span class="module-icon" aria-hidden="true">SP</span>
+        <h2>Supplier</h2>
+        <p>Simpan profil dan informasi pemasok tepercaya.</p>
+    </article>
+    <article class="card module-card">
+        <span class="module-icon" aria-hidden="true">PO</span>
+        <h2>Pengadaan</h2>
+        <p>Pantau kebutuhan dan proses pembelian aktif.</p>
+    </article>
+    <article class="card module-card">
+        <span class="module-icon" aria-hidden="true">QT</span>
+        <h2>Penawaran</h2>
+        <p>Bandingkan harga dan detail penawaran supplier.</p>
+    </article>
+    <article class="card module-card">
+        <span class="module-icon" aria-hidden="true">OP</span>
+        <h2>Optimasi</h2>
+        <p>Temukan kombinasi pembelian yang lebih efisien.</p>
+    </article>
+</section>
 {% endblock %}

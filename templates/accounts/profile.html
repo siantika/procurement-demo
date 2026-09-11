@@ -1,20 +1,44 @@
 {% extends "base.html" %}
 
+{% block title %}Profil · Procurement ERP{% endblock %}
+
 {% block content %}
-<h1>My Profile</h1>
+<div class="page-heading">
+    <div>
+        <span class="eyebrow">Akun saya</span>
+        <h1>Profil</h1>
+        <p>Informasi akun yang sedang Anda gunakan.</p>
+    </div>
+</div>
 
-<p><strong>Username:</strong> {{ user.username }}</p>
-<p><strong>Email:</strong> {{ user.email }}</p>
-<p><strong>First name:</strong> {{ user.first_name }}</p>
-<p><strong>Last name:</strong> {{ user.last_name }}</p>
+<section class="card profile-card" aria-labelledby="profile-name">
+    <div class="profile-summary">
+        <div class="avatar" aria-hidden="true">
+            {{ user.full_name|first|upper }}
+        </div>
+        <div>
+            <h2 id="profile-name">{{ user.full_name }}</h2>
+            <span class="status-badge">{{ user.get_role_display }}</span>
+        </div>
+    </div>
 
-<h3>Groups</h3>
-
-<ul>
-    {% for group in user.groups.all %}
-        <li>{{ group.name }}</li>
-    {% empty %}
-        <li>No group assigned.</li>
-    {% endfor %}
-</ul>
+    <dl class="detail-grid">
+        <div>
+            <dt>Username</dt>
+            <dd>{{ user.username }}</dd>
+        </div>
+        <div>
+            <dt>Email</dt>
+            <dd>{{ user.email }}</dd>
+        </div>
+        <div>
+            <dt>Nama lengkap</dt>
+            <dd>{{ user.full_name }}</dd>
+        </div>
+        <div>
+            <dt>Peran</dt>
+            <dd>{{ user.get_role_display }}</dd>
+        </div>
+    </dl>
+</section>
 {% endblock %}
