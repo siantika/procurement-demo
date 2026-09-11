@@ -6,12 +6,14 @@ lulus, tambahkan test form pada class terpisah.
 
 import uuid
 
+from django.contrib import admin as django_admin
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
-from django.test import Client, TestCase
+from django.test import Client, RequestFactory, TestCase
 from django.urls import reverse
 
+from .admin import AccountUserAdmin
 from .choices import UserRole
 from .forms import (
     AdminUserChangeForm,
@@ -443,3 +445,153 @@ class AccountViewTests(TestCase):
 
         self.assertEqual(response.status_code, 403)
         self.assertIn("_auth_user_id", csrf_client.session)
+
+
+class AccountUserAdminTests(TestCase):
+    """Memeriksa konfigurasi dan authorization Django Admin."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.superuser = User.objects.create_superuser(
+            username="root-admin",
+            email="root@example.com",
+            password="StrongPassword123!",
+            full_name="Root Admin",
+            role=UserRole.ADMIN,
+        )
+        cls.admin_user = User.objects.create_user(
+            username="business-admin",
+            email="admin@example.com",
+            password="StrongPassword123!",
+            full_name="Business Admin",
+            role=UserRole.ADMIN,
+            is_staff=True,
+        )
+        cls.manager = User.objects.create_user(
+            username="manager-admin-test",
+            email="manager-admin@example.com",
+            password="StrongPassword123!",
+            full_name="Manager Admin Test",
+            role=UserRole.MANAGER,
+            is_staff=True,
+        )
+
+    def setUp(self):
+        self.user_admin = django_admin.site._registry[User]
+        self.request_factory = RequestFactory()
+
+    def request_for(self, user):
+        request = self.request_factory.get("/admin/accounts/user/")
+        request.user = user
+        return request
+
+    def test_custom_user_is_registered_with_expected_forms(self):
+        self.assertIsInstance(self.user_admin, AccountUserAdmin)
+        self.assertIs(
+            self.user_admin.add_form,
+            AdminUserCreationForm,
+        )
+        self.assertIs(
+            self.user_admin.form,
+            AdminUserChangeForm,
+        )
+
+    def test_list_configuration_exposes_business_fields(self):
+        self.assertEqual(
+            self.user_admin.list_display,
+            (
+                "username",
+                "email",
+                "full_name",
+                "role",
+                "is_active",
+            ),
+        )
+        self.assertEqual(
+            self.user_admin.list_filter,
+            ("role", "is_active"),
+        )
+
+    def test_superuser_can_open_user_admin_pages(self):
+        self.client.force_login(self.superuser)
+        urls = (
+            reverse("admin:accounts_user_changelist"),
+            reverse("admin:accounts_user_add"),
+            reverse(
+                "admin:accounts_user_change",
+                args=[self.admin_user.pk],
+            ),
+        )
+
+        for url in urls:
+            with self.subTest(url=url):
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, 200)
+
+    def test_admin_role_can_open_user_changelist(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(
+            reverse("admin:accounts_user_changelist")
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_non_admin_role_cannot_open_user_changelist(self):
+        self.client.force_login(self.manager)
+
+        response = self.client.get(
+            reverse("admin:accounts_user_changelist")
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_only_admin_role_receives_model_permissions(self):
+        admin_request = self.request_for(self.admin_user)
+        manager_request = self.request_for(self.manager)
+
+        self.assertTrue(
+            self.user_admin.has_module_permission(admin_request)
+        )
+        self.assertTrue(self.user_admin.has_add_permission(admin_request))
+        self.assertTrue(
+            self.user_admin.has_change_permission(admin_request)
+        )
+        self.assertTrue(self.user_admin.has_view_permission(admin_request))
+
+        self.assertFalse(
+            self.user_admin.has_module_permission(manager_request)
+        )
+        self.assertFalse(
+            self.user_admin.has_add_permission(manager_request)
+        )
+        self.assertFalse(
+            self.user_admin.has_change_permission(manager_request)
+        )
+        self.assertFalse(
+            self.user_admin.has_view_permission(manager_request)
+        )
+
+    def test_hard_delete_is_disabled(self):
+        request = self.request_for(self.superuser)
+
+        self.assertFalse(
+            self.user_admin.has_delete_permission(request, self.manager)
+        )
+
+    def test_save_model_synchronizes_is_staff_with_role(self):
+        request = self.request_for(self.superuser)
+        user = User(
+            username="new-admin",
+            email="new-admin@example.com",
+            full_name="New Admin",
+            role=UserRole.ADMIN,
+        )
+        user.set_password("StrongPassword123!")
+
+        self.user_admin.save_model(request, user, form=None, change=False)
+        self.assertTrue(user.is_staff)
+
+        user.role = UserRole.MANAGER
+        self.user_admin.save_model(request, user, form=None, change=True)
+        self.assertFalse(user.is_staff)
