@@ -39,16 +39,22 @@ class DatabaseFromUrlTests(TestCase):
 class EnvironmentValueTests(TestCase):
     def test_parses_supported_boolean_values(self):
         for raw_value in ("1", "true", "YES", "on"):
-            with self.subTest(raw_value=raw_value), patch.dict(
-                "os.environ",
-                {"FEATURE_FLAG": raw_value},
+            with (
+                self.subTest(raw_value=raw_value),
+                patch.dict(
+                    "os.environ",
+                    {"FEATURE_FLAG": raw_value},
+                ),
             ):
                 self.assertTrue(env_bool("FEATURE_FLAG", default=False))
 
         for raw_value in ("0", "false", "NO", "off"):
-            with self.subTest(raw_value=raw_value), patch.dict(
-                "os.environ",
-                {"FEATURE_FLAG": raw_value},
+            with (
+                self.subTest(raw_value=raw_value),
+                patch.dict(
+                    "os.environ",
+                    {"FEATURE_FLAG": raw_value},
+                ),
             ):
                 self.assertFalse(env_bool("FEATURE_FLAG", default=True))
 
@@ -60,8 +66,12 @@ class EnvironmentValueTests(TestCase):
             env_bool("FEATURE_FLAG", default=False)
 
     def test_parses_and_trims_csv_values(self):
-        with patch.dict("os.environ", {"HOSTS": "example.com, api.example.com, "}):
-            self.assertEqual(env_csv("HOSTS"), ["example.com", "api.example.com"])
+        with patch.dict(
+            "os.environ", {"HOSTS": "example.com, api.example.com, "}
+        ):
+            self.assertEqual(
+                env_csv("HOSTS"), ["example.com", "api.example.com"]
+            )
 
     def test_rejects_empty_required_csv(self):
         with (

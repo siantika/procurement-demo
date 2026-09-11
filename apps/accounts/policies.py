@@ -14,10 +14,20 @@ def require_active_user(user):
     return user
 
 
+def require_valid_role(user):
+    """Pastikan actor aktif mempunyai role bisnis yang dikenal."""
+
+    require_active_user(user)
+    if user.role not in UserRole.values:
+        raise PermissionDenied("Role account tidak valid.")
+
+    return user
+
+
 def require_role(user, expected_role):
     """Pastikan actor aktif mempunyai role bisnis yang diharapkan."""
 
-    require_active_user(user)
+    require_valid_role(user)
     if user.role != expected_role:
         raise PermissionDenied(
             "Anda tidak memiliki akses untuk tindakan ini."

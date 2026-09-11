@@ -8,14 +8,18 @@ from urllib.parse import parse_qs, unquote, urlparse
 def env(name: str, *, default: str | None = None) -> str:
     value = os.environ.get(name, default)
     if value is None:
-        raise RuntimeError(f"Missing required environment variable: {name}")
+        raise RuntimeError(
+            f"Missing required environment variable: {name}"
+        )
     return value
 
 
 def env_required(name: str) -> str:
     value = env(name).strip()
     if not value:
-        raise RuntimeError(f"Environment variable must not be empty: {name}")
+        raise RuntimeError(
+            f"Environment variable must not be empty: {name}"
+        )
     return value
 
 
@@ -39,7 +43,9 @@ def env_int(name: str, *, default: int) -> int:
     try:
         return int(raw_value)
     except ValueError as exc:
-        raise RuntimeError(f"Invalid integer value for {name}: {raw_value!r}") from exc
+        raise RuntimeError(
+            f"Invalid integer value for {name}: {raw_value!r}"
+        ) from exc
 
 
 def env_csv(
@@ -49,18 +55,27 @@ def env_csv(
     required: bool = False,
 ) -> list[str]:
     raw_value = os.environ.get(name, default)
-    values = [item.strip() for item in raw_value.split(",") if item.strip()]
+    values = [
+        item.strip() for item in raw_value.split(",") if item.strip()
+    ]
     if required and not values:
-        raise RuntimeError(f"Missing required comma-separated environment variable: {name}")
+        raise RuntimeError(
+            "Missing required comma-separated environment variable: "
+            f"{name}"
+        )
     return values
 
 
-def database_from_url(url: str, *, conn_max_age: int = 0) -> dict[str, Any]:
+def database_from_url(
+    url: str, *, conn_max_age: int = 0
+) -> dict[str, Any]:
     """Convert a PostgreSQL URL into a Django DATABASES entry."""
 
     parsed = urlparse(url)
     if parsed.scheme not in {"postgres", "postgresql"}:
-        raise RuntimeError("DATABASE_URL must use postgres:// or postgresql://")
+        raise RuntimeError(
+            "DATABASE_URL must use postgres:// or postgresql://"
+        )
 
     database_name = unquote(parsed.path.lstrip("/"))
     if not database_name:

@@ -24,8 +24,22 @@ DATABASES = {
     ),
 }
 
-CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://127.0.0.1:6379/0")
-CELERY_TASK_ALWAYS_EAGER = env_bool("CELERY_TASK_ALWAYS_EAGER", default=False)
+CELERY_BROKER_URL = env(
+    "CELERY_BROKER_URL", default="redis://127.0.0.1:6379/0"
+)
+CELERY_TASK_ALWAYS_EAGER = env_bool(
+    "CELERY_TASK_ALWAYS_EAGER", default=False
+)
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": env(
+            "DJANGO_CACHE_URL",
+            default="redis://127.0.0.1:6379/1",
+        ),
+    }
+}
 
 MINIO_ENDPOINT = env("MINIO_ENDPOINT", default="127.0.0.1:9000")
 MINIO_ACCESS_KEY = env("MINIO_ACCESS_KEY", default="minioadmin")

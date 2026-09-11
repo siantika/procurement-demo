@@ -1,11 +1,14 @@
 """Konfigurasi pengelolaan custom User melalui Django Admin."""
 
+import uuid
+
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
 from .choices import UserRole
 from .forms import AdminUserChangeForm, AdminUserCreationForm
 from .models import User
+from .services import save_user_from_admin
 
 
 @admin.register(User)
@@ -72,11 +75,9 @@ class AccountUserAdmin(UserAdmin):
 
     @staticmethod
     def _can_manage_users(user):
-        """Izinkan superuser atau user aktif dengan role ADMIN."""
+        """Izinkan hanya user aktif dengan role bisnis ADMIN."""
 
-        return user.is_active and (
-            user.is_superuser or user.role == UserRole.ADMIN
-        )
+        return user.is_active and user.role == UserRole.ADMIN
 
     def has_module_permission(self, request):
         return self._can_manage_users(request.user)
@@ -94,7 +95,15 @@ class AccountUserAdmin(UserAdmin):
         return False
 
     def save_model(self, request, obj, form, change):
-        """Sinkronkan akses admin dengan role bisnis sebelum menyimpan."""
+        """Simpan dan audit melalui application service accounts."""
 
-        obj.is_staff = obj.role == UserRole.ADMIN
-        super().save_model(request, obj, form, change)
+        correlation_id = getattr(
+            request,
+            "correlation_id",
+            str(uuid.uuid4()),
+        )
+        save_user_from_admin(
+            actor=request.user,
+            user=obj,
+            correlation_id=correlation_id,
+        )

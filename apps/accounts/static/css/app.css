@@ -260,6 +260,10 @@ h2 {
     font-size: 0.9rem;
 }
 
+.alert p:last-child {
+    margin-bottom: 0;
+}
+
 .field-error {
     margin: 0;
     color: var(--danger);

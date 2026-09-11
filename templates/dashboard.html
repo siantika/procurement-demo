@@ -13,30 +13,39 @@
 </div>
 
 <section class="module-grid" aria-label="Modul procurement">
-    <article class="card module-card">
-        <span class="module-icon" aria-hidden="true">PR</span>
-        <h2>Produk</h2>
-        <p>Kelola katalog dan spesifikasi produk medis.</p>
-    </article>
-    <article class="card module-card">
-        <span class="module-icon" aria-hidden="true">SP</span>
-        <h2>Supplier</h2>
-        <p>Simpan profil dan informasi pemasok tepercaya.</p>
-    </article>
-    <article class="card module-card">
-        <span class="module-icon" aria-hidden="true">PO</span>
-        <h2>Pengadaan</h2>
-        <p>Pantau kebutuhan dan proses pembelian aktif.</p>
-    </article>
-    <article class="card module-card">
-        <span class="module-icon" aria-hidden="true">QT</span>
-        <h2>Penawaran</h2>
-        <p>Bandingkan harga dan detail penawaran supplier.</p>
-    </article>
-    <article class="card module-card">
-        <span class="module-icon" aria-hidden="true">OP</span>
-        <h2>Optimasi</h2>
-        <p>Temukan kombinasi pembelian yang lebih efisien.</p>
-    </article>
+    {% if user.role == "ADMIN" %}
+        <article class="card module-card">
+            <span class="module-icon" aria-hidden="true">PR</span>
+            <h2>Produk</h2>
+            <p>Kelola katalog dan spesifikasi produk medis.</p>
+        </article>
+        <article class="card module-card">
+            <span class="module-icon" aria-hidden="true">SP</span>
+            <h2>Supplier</h2>
+            <p>Simpan profil dan informasi pemasok tepercaya.</p>
+        </article>
+    {% elif user.role == "PROCUREMENT_STAFF" %}
+        <article class="card module-card">
+            <span class="module-icon" aria-hidden="true">PO</span>
+            <h2>Pengadaan</h2>
+            <p>Pantau kebutuhan dan proses pembelian aktif.</p>
+        </article>
+        <article class="card module-card">
+            <span class="module-icon" aria-hidden="true">QT</span>
+            <h2>Penawaran</h2>
+            <p>Bandingkan harga dan penawaran supplier.</p>
+        </article>
+        <article class="card module-card">
+            <span class="module-icon" aria-hidden="true">OP</span>
+            <h2>Optimasi</h2>
+            <p>Temukan kombinasi pembelian yang lebih efisien.</p>
+        </article>
+    {% elif user.role == "MANAGER" %}
+        <article class="card module-card">
+            <span class="module-icon" aria-hidden="true">AP</span>
+            <h2>Persetujuan</h2>
+            <p>Tinjau, setujui, atau tolak proposal pengadaan.</p>
+        </article>
+    {% endif %}
 </section>
 {% endblock %}

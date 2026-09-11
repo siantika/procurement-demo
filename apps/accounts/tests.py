@@ -9,6 +9,7 @@ import uuid
 from django.contrib import admin as django_admin
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
+from django.core.cache import cache
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError, transaction
 from django.test import Client, RequestFactory, TestCase
@@ -27,6 +28,7 @@ from .policies import (
     require_manager,
     require_procurement_staff,
     require_role,
+    require_valid_role,
 )
 
 User = get_user_model()
@@ -99,6 +101,98 @@ class UserModelTests(TestCase):
         # ketika diperiksa melalui password hasher Django.
         self.assertNotEqual(self.user.password, self.raw_password)
         self.assertTrue(self.user.check_password(self.raw_password))
+
+    def test_username_is_unique_case_insensitively(self):
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            User.objects.create_user(
+                username="STAFF",
+                email="other@example.com",
+                password="AnotherStrongPassword123!",
+                full_name="Other User",
+                role=UserRole.MANAGER,
+            )
+
+    def test_email_is_unique_case_insensitively(self):
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            User.objects.create_user(
+                username="other-user",
+                email="STAFF@EXAMPLE.COM",
+                password="AnotherStrongPassword123!",
+                full_name="Other User",
+                role=UserRole.MANAGER,
+            )
+
+    def test_database_rejects_unknown_role(self):
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            User.objects.filter(pk=self.user.pk).update(role="UNKNOWN")
+
+    def test_manager_synchronizes_is_staff_with_role(self):
+        admin_user = User.objects.create_user(
+            username="admin-role",
+            email="admin-role@example.com",
+            password="StrongPassword123!",
+            full_name="Admin Role",
+            role=UserRole.ADMIN,
+        )
+        manager_user = User.objects.create_user(
+            username="manager-role",
+            email="manager-role@example.com",
+            password="StrongPassword123!",
+            full_name="Manager Role",
+            role=UserRole.MANAGER,
+            is_staff=True,
+        )
+
+        self.assertTrue(admin_user.is_staff)
+        self.assertFalse(manager_user.is_staff)
+
+    def test_manager_requires_identity_and_valid_role(self):
+        required_values = (
+            {"email": ""},
+            {"full_name": ""},
+            {"role": "UNKNOWN"},
+        )
+        base_data = {
+            "email": "required@example.com",
+            "full_name": "Required User",
+            "role": UserRole.MANAGER,
+        }
+
+        for missing_value in required_values:
+            with self.subTest(missing_value=missing_value):
+                with self.assertRaises(ValueError):
+                    User.objects.create_user(
+                        username="required-user",
+                        password="StrongPassword123!",
+                        **(base_data | missing_value),
+                    )
+
+    def test_required_fields_support_createsuperuser(self):
+        self.assertEqual(
+            User.REQUIRED_FIELDS,
+            ["email", "full_name", "role"],
+        )
+
+    def test_superuser_requires_complete_admin_identity(self):
+        cases = (
+            {"email": ""},
+            {"full_name": ""},
+            {"role": UserRole.MANAGER},
+        )
+        base_data = {
+            "email": "complete-superuser@example.com",
+            "full_name": "Complete Superuser",
+            "role": UserRole.ADMIN,
+        }
+
+        for invalid_value in cases:
+            with self.subTest(invalid_value=invalid_value):
+                with self.assertRaises(ValueError):
+                    User.objects.create_superuser(
+                        username="invalid-superuser",
+                        password="StrongPassword123!",
+                        **(base_data | invalid_value),
+                    )
 
 
 class LoginFormTests(TestCase):
@@ -225,6 +319,20 @@ class AdminUserCreationFormTests(TestCase):
         self.assertFalse(form.is_valid())
         self.assertIn("email", form.errors)
 
+    def test_rejects_case_insensitive_duplicate_identity(self):
+        cases = (
+            {"username": self.existing_user.username.upper()},
+            {"email": self.existing_user.email.upper()},
+        )
+
+        for duplicate_value in cases:
+            with self.subTest(duplicate_value=duplicate_value):
+                form = AdminUserCreationForm(
+                    data=self.valid_data(**duplicate_value)
+                )
+                self.assertFalse(form.is_valid())
+                self.assertIn(next(iter(duplicate_value)), form.errors)
+
     def test_rejects_unknown_role(self):
         form = AdminUserCreationForm(
             data=self.valid_data(role="UNKNOWN_ROLE")
@@ -329,6 +437,22 @@ class AdminUserChangeFormTests(TestCase):
         self.assertFalse(form.is_valid())
         self.assertIn("role", form.errors)
 
+    def test_rejects_case_insensitive_duplicate_email(self):
+        other_user = User.objects.create_user(
+            username="other-change-user",
+            email="other-change@example.com",
+            password="StrongPassword123!",
+            full_name="Other Change User",
+            role=UserRole.MANAGER,
+        )
+        form = AdminUserChangeForm(
+            data=self.change_data(email=other_user.email.upper()),
+            instance=self.user,
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("email", form.errors)
+
 
 class AccountViewTests(TestCase):
     """Memeriksa kontrak HTTP dan session untuk account views."""
@@ -343,6 +467,23 @@ class AccountViewTests(TestCase):
             full_name="View User",
             role=UserRole.PROCUREMENT_STAFF,
         )
+        cls.admin_user = User.objects.create_user(
+            username="view-admin",
+            email="view-admin@example.com",
+            password=cls.raw_password,
+            full_name="View Admin",
+            role=UserRole.ADMIN,
+        )
+        cls.manager = User.objects.create_user(
+            username="view-manager",
+            email="view-manager@example.com",
+            password=cls.raw_password,
+            full_name="View Manager",
+            role=UserRole.MANAGER,
+        )
+
+    def setUp(self):
+        cache.clear()
 
     def login_data(self, **overrides):
         data = {
@@ -390,6 +531,50 @@ class AccountViewTests(TestCase):
         self.assertContains(response, "Username atau password salah.")
         self.assertNotIn("_auth_user_id", self.client.session)
 
+    def test_login_is_blocked_after_repeated_failures(self):
+        for _ in range(5):
+            self.client.post(
+                reverse("accounts:login"),
+                data=self.login_data(password="WrongPassword123!"),
+                REMOTE_ADDR="192.0.2.10",
+            )
+
+        response = self.client.post(
+            reverse("accounts:login"),
+            data=self.login_data(),
+            REMOTE_ADDR="192.0.2.10",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Login sementara dibatasi.")
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_login_limit_is_scoped_by_identity_and_source(self):
+        for _ in range(5):
+            self.client.post(
+                reverse("accounts:login"),
+                data=self.login_data(password="WrongPassword123!"),
+                REMOTE_ADDR="192.0.2.10",
+            )
+
+        different_source = self.client.post(
+            reverse("accounts:login"),
+            data=self.login_data(),
+            REMOTE_ADDR="192.0.2.11",
+        )
+        self.assertRedirects(different_source, reverse("dashboard"))
+
+        self.client.logout()
+        different_identity = self.client.post(
+            reverse("accounts:login"),
+            data={
+                "username": self.manager.username,
+                "password": self.raw_password,
+            },
+            REMOTE_ADDR="192.0.2.10",
+        )
+        self.assertRedirects(different_identity, reverse("dashboard"))
+
     def test_authenticated_user_is_redirected_from_login(self):
         self.client.force_login(self.user)
 
@@ -416,6 +601,44 @@ class AccountViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "accounts/profile.html")
         self.assertEqual(response.context["user"], self.user)
+
+    def test_dashboard_modules_follow_user_role(self):
+        cases = (
+            (
+                self.admin_user,
+                ("Produk", "Supplier"),
+                ("Pengadaan", "Persetujuan"),
+            ),
+            (
+                self.user,
+                ("Pengadaan", "Penawaran", "Optimasi"),
+                ("Produk", "Persetujuan"),
+            ),
+            (
+                self.manager,
+                ("Persetujuan",),
+                ("Produk", "Pengadaan"),
+            ),
+        )
+
+        for user, visible_labels, hidden_labels in cases:
+            with self.subTest(role=user.role):
+                self.client.force_login(user)
+                response = self.client.get(reverse("dashboard"))
+                self.assertEqual(response.status_code, 200)
+                for label in visible_labels:
+                    self.assertContains(
+                        response,
+                        f"<h2>{label}</h2>",
+                        html=True,
+                    )
+                for label in hidden_labels:
+                    self.assertNotContains(
+                        response,
+                        f"<h2>{label}</h2>",
+                        html=True,
+                    )
+                self.client.logout()
 
     def test_post_logout_clears_session_and_redirects(self):
         self.client.force_login(self.user)
@@ -545,14 +768,18 @@ class AccountUserAdminTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
 
-    def test_non_admin_role_cannot_open_user_changelist(self):
+    def test_non_admin_role_cannot_enter_admin_site(self):
         self.client.force_login(self.manager)
 
         response = self.client.get(
             reverse("admin:accounts_user_changelist")
         )
 
-        self.assertEqual(response.status_code, 403)
+        self.assertRedirects(
+            response,
+            f"{reverse('admin:login')}?next="
+            f"{reverse('admin:accounts_user_changelist')}",
+        )
 
     def test_only_admin_role_receives_model_permissions(self):
         admin_request = self.request_for(self.admin_user)
@@ -652,6 +879,13 @@ class AccountPolicyTests(TestCase):
         with self.assertRaises(PermissionDenied):
             require_role(user, UserRole.ADMIN)
 
+    def test_require_valid_role_rejects_unknown_role(self):
+        user = self.users[UserRole.MANAGER]
+        user.role = "UNKNOWN_ROLE"
+
+        with self.assertRaises(PermissionDenied):
+            require_valid_role(user)
+
     def test_role_helpers_accept_their_corresponding_role(self):
         cases = (
             (require_admin, UserRole.ADMIN),
@@ -682,8 +916,9 @@ class AccountPolicyTests(TestCase):
             email="policy-superuser@example.com",
             password="StrongPassword123!",
             full_name="Policy Superuser",
-            role=UserRole.MANAGER,
+            role=UserRole.ADMIN,
         )
+        superuser.role = UserRole.MANAGER
 
         with self.assertRaises(PermissionDenied):
             require_admin(superuser)

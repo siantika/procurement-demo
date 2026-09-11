@@ -1,13 +1,22 @@
 """Demo VPS settings."""
 
-from config.env import database_from_url, env, env_bool, env_csv, env_int, env_required
+from config.env import (
+    database_from_url,
+    env,
+    env_bool,
+    env_csv,
+    env_int,
+    env_required,
+)
 
 from .base import *  # noqa: F403
 
 SECRET_KEY = env_required("DJANGO_SECRET_KEY")
 DEBUG = False
 ALLOWED_HOSTS = env_csv("DJANGO_ALLOWED_HOSTS", required=True)
-CSRF_TRUSTED_ORIGINS = env_csv("DJANGO_CSRF_TRUSTED_ORIGINS", required=True)
+CSRF_TRUSTED_ORIGINS = env_csv(
+    "DJANGO_CSRF_TRUSTED_ORIGINS", required=True
+)
 
 DATABASES = {
     "default": database_from_url(
@@ -17,6 +26,13 @@ DATABASES = {
 }
 
 CELERY_BROKER_URL = env_required("CELERY_BROKER_URL")
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": env_required("DJANGO_CACHE_URL"),
+    }
+}
 
 MINIO_ENDPOINT = env_required("MINIO_ENDPOINT")
 MINIO_ACCESS_KEY = env_required("MINIO_ACCESS_KEY")

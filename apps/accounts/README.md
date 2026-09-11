@@ -3,6 +3,14 @@
 Modul ini dikerjakan sebagai satu vertical slice kecil. Jangan mengerjakan
 semua TODO sekaligus.
 
+## Status
+
+- custom User, form, login/logout/profile, dan dashboard selesai;
+- Django Admin dan authorization policy selesai;
+- account services sudah transactional dan menulis AuditEvent;
+- `seed_demo` sudah membuat tiga akun canonical secara idempotent;
+- perluasan service bisnis berikutnya dilakukan di app pemilik aggregate.
+
 ## Urutan pengerjaan
 
 1. Selesaikan `forms.py` dan buat test form.
@@ -12,6 +20,9 @@ semua TODO sekaligus.
 5. Selesaikan `admin.py` dan buat tiga user role melalui Django Admin.
 6. Implementasikan `policies.py` beserta test 403.
 7. Implementasikan `services.py` setelah primitive audit tersedia.
+
+Seluruh langkah accounts di atas sudah diterapkan. Daftar tetap dipertahankan
+sebagai urutan referensi untuk pengembangan atau onboarding berikutnya.
 
 ## Checkpoint commands
 
