@@ -55,6 +55,33 @@
         {% endif %}
         {% block content %}{% endblock %}
     </main>
+    {% if toast_notifications %}
+        <aside class="toast-region"
+               aria-label="Notifikasi terbaru"
+               aria-live="polite">
+            {% for notification in toast_notifications %}
+                <article class="toast"
+                         data-toast
+                         data-toast-id="{{ notification.pk }}"
+                         {% if notification.type == "OPTIMIZATION_FAILED" %}role="alert"{% else %}role="status"{% endif %}>
+                    <div class="toast-content">
+                        <strong>{{ notification.title }}</strong>
+                        <p>{{ notification.message }}</p>
+                        {% if notification.source_entity_type == "OptimizationRun" %}
+                            <a href="{% url 'optimization:run-detail' notification.source_entity_id %}">Lihat optimization</a>
+                        {% else %}
+                            <a href="{% url 'notifications:list' %}">Lihat notifikasi</a>
+                        {% endif %}
+                    </div>
+                    <button class="toast-close"
+                            type="button"
+                            data-toast-close
+                            aria-label="Tutup notifikasi {{ notification.title }}">×</button>
+                </article>
+            {% endfor %}
+        </aside>
+    {% endif %}
+    <script src="{% static 'notifications/js/toasts.js' %}" defer></script>
     {% block extra_scripts %}{% endblock %}
 </body>
 </html>

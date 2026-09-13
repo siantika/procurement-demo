@@ -85,3 +85,26 @@ class NotificationTests(TestCase):
         self.assertRedirects(response, reverse("notifications:list"))
         notification.refresh_from_db()
         self.assertIsNotNone(notification.read_at)
+
+    def test_unread_notification_appears_as_global_toast(self):
+        self.notification()
+        self.client.force_login(self.recipient)
+
+        response = self.client.get(reverse("dashboard"))
+
+        self.assertContains(response, "data-toast")
+        self.assertContains(response, "Optimization selesai")
+
+    def test_read_notification_is_not_rendered_as_toast(self):
+        notification = self.notification()
+        self.client.force_login(self.recipient)
+        self.client.post(
+            reverse(
+                "notifications:mark-read",
+                kwargs={"notification_id": notification.pk},
+            )
+        )
+
+        response = self.client.get(reverse("dashboard"))
+
+        self.assertNotContains(response, "data-toast-id")

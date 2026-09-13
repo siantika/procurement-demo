@@ -274,6 +274,74 @@ h2 {
     color: var(--primary-dark);
 }
 
+.toast-region {
+    position: fixed;
+    z-index: 20;
+    top: 88px;
+    right: 20px;
+    display: grid;
+    width: min(380px, calc(100% - 40px));
+    gap: 12px;
+}
+
+.toast {
+    display: flex;
+    padding: 16px;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+}
+
+.toast-content {
+    min-width: 0;
+}
+
+.toast-content strong,
+.toast-content p {
+    overflow-wrap: anywhere;
+}
+
+.toast-content p {
+    margin: 4px 0 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+}
+
+.toast-content a {
+    color: var(--primary-dark);
+    font-size: 0.84rem;
+    font-weight: 750;
+}
+
+.toast-close {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    padding: 0;
+    border: 0;
+    border-radius: 9px;
+    background: var(--surface-soft);
+    color: var(--text);
+    cursor: pointer;
+    font: inherit;
+    font-size: 1.25rem;
+    place-items: center;
+}
+
+.toast-close:hover {
+    color: var(--primary-dark);
+}
+
+.toast-close:focus-visible {
+    outline: 3px solid rgba(20, 125, 108, 0.28);
+    outline-offset: 2px;
+}
+
 .field-error {
     margin: 0;
     color: var(--danger);
@@ -627,5 +695,12 @@ h2 {
 
     .form-actions form .button {
         width: 100%;
+    }
+
+    .toast-region {
+        top: auto;
+        right: 14px;
+        bottom: 14px;
+        width: calc(100% - 28px);
     }
 }
