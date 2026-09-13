@@ -266,6 +266,65 @@ class TenderViewTests(TenderFixtureMixin, TestCase):
             reverse("tender:detail", args=[tender.pk]),
         )
 
+    def test_create_page_exposes_dynamic_item_controls(self):
+        self.client.force_login(self.staff)
+
+        response = self.client.get(reverse("tender:create"))
+
+        self.assertContains(response, "Tambah item")
+        self.assertContains(response, 'id="tender-item-template"')
+        self.assertContains(response, "tender/js/tender_formset.js")
+
+    def test_staff_can_create_tender_with_multiple_items(self):
+        second_product = Product.objects.create(
+            code="MONITOR-001",
+            name="Patient Monitor",
+            default_unit="unit",
+            created_by=self.admin,
+        )
+        self.client.force_login(self.staff)
+
+        response = self.client.post(
+            reverse("tender:create"),
+            {
+                "internal_code": "TND-MULTI-001",
+                "tender_reference_number": "REF-MULTI",
+                "institution_name": "RS Multi",
+                "institution_address": "Jakarta",
+                "title": "Tender Multi-item",
+                "description": "",
+                "total_hps": "900000000.00",
+                "items-TOTAL_FORMS": "2",
+                "items-INITIAL_FORMS": "0",
+                "items-MIN_NUM_FORMS": "0",
+                "items-MAX_NUM_FORMS": "1000",
+                "items-0-line_number": "1",
+                "items-0-product": str(self.product.pk),
+                "items-0-requested_quantity": "100.000",
+                "items-0-unit": "unit",
+                "items-0-specification": "Medical grade",
+                "items-0-description": "",
+                "items-1-line_number": "2",
+                "items-1-product": str(second_product.pk),
+                "items-1-requested_quantity": "20.000",
+                "items-1-unit": "unit",
+                "items-1-specification": "ICU grade",
+                "items-1-description": "",
+            },
+        )
+
+        tender = TenderRequest.objects.get(internal_code="TND-MULTI-001")
+        self.assertRedirects(
+            response,
+            reverse("tender:detail", args=[tender.pk]),
+        )
+        revision = get_current_tender_revision(tender.pk)
+        self.assertEqual(revision.items.count(), 2)
+        self.assertSetEqual(
+            set(revision.items.values_list("product__code", flat=True)),
+            {"PUMP-001", "MONITOR-001"},
+        )
+
     def test_revision_returns_conflict_for_stale_form(self):
         tender = self.create()
         TenderRequest.objects.filter(pk=tender.pk).update(version=2)

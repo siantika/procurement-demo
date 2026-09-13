@@ -77,6 +77,8 @@ class TenderItemForm(forms.Form):
 
 
 class TenderItemBaseFormSet(BaseFormSet):
+    deletion_widget = forms.HiddenInput
+
     def clean(self):
         super().clean()
         if any(self.errors):
