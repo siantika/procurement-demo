@@ -35,6 +35,7 @@
     <dl class="detail-grid">
         <div><dt>Status</dt><dd>{{ result.get_status_display }}</dd></div>
         <div><dt>Source</dt><dd>{{ result.get_source_type_display }}</dd></div>
+        {% if result.optimization_run %}<div><dt>Optimization rank</dt><dd><a href="{% url 'optimization:run-detail' result.optimization_run.pk %}">#{{ result.rank }} · buka run</a></dd></div>{% endif %}
         <div><dt>Total purchase</dt><dd>{% if result.total_purchase %}Rp{{ result.total_purchase|floatformat:"2g" }}{% else %}Belum dihitung{% endif %}</dd></div>
         <div><dt>Calculation version</dt><dd>{{ result.calculation_version }}</dd></div>
         <div><dt>Selection</dt><dd>{% if current_selection and current_selection.procurement_result_id == result.pk %}Pilihan aktif #{{ current_selection.selection_number }}{% else %}Tidak dipilih{% endif %}</dd></div>

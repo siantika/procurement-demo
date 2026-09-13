@@ -17,6 +17,8 @@ INSTALLED_APPS = [
     "apps.accounts.apps.AccountsConfig",
     "apps.audit.apps.AuditConfig",
     "apps.catalog.apps.CatalogConfig",
+    "apps.notifications.apps.NotificationsConfig",
+    "apps.optimization.apps.OptimizationConfig",
     "apps.sourcing.apps.SourcingConfig",
     "apps.tender.apps.TenderConfig",
 ]
@@ -103,6 +105,20 @@ CELERY_TASK_ROUTES = {
     "apps.optimization.tasks.*": {"queue": "optimization"},
     "apps.documents.tasks.*": {"queue": "documents"},
 }
+CELERY_BEAT_SCHEDULE = {
+    "reconcile-pending-optimization-runs": {
+        "task": "apps.optimization.tasks.reconcile_pending_runs",
+        "schedule": 60.0,
+    },
+}
+
+OPTIMIZER_MAX_ITEMS = 100
+OPTIMIZER_MAX_OFFERS_PER_ITEM = 50
+OPTIMIZER_MAX_RESULTS = 20
+OPTIMIZER_EXPLORATION_LIMIT = 2_000
+OPTIMIZER_SOFT_TIME_LIMIT_SECONDS = 240
+OPTIMIZER_HARD_TIME_LIMIT_SECONDS = 300
+OPTIMIZER_RECONCILIATION_GRACE_SECONDS = 60
 
 MINIO_BUCKET = "procurement-private"
 MINIO_SECURE = False

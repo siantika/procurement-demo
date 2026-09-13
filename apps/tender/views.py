@@ -4,6 +4,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.accounts.policies import require_procurement_staff
 from apps.core.exceptions import ConcurrencyConflict
+from apps.optimization.models import OptimizationRun
 
 from .forms import TenderDetailsForm, TenderItemFormSet, TenderRevisionForm
 from .models import TenderRequest
@@ -83,6 +84,9 @@ def tender_detail(request, tender_id):
     tender = get_object_or_404(TenderRequest, pk=tender_id)
     current_revision = get_current_tender_revision(tender.pk)
     revisions = tender.revisions.select_related("created_by")
+    optimization_runs = OptimizationRun.objects.filter(
+        tender_request=tender
+    ).select_related("requested_by", "tender_revision")
     return render(
         request,
         "tender/tender_detail.html",
@@ -90,6 +94,7 @@ def tender_detail(request, tender_id):
             "tender": tender,
             "revision": current_revision,
             "revisions": revisions,
+            "optimization_runs": optimization_runs,
         },
     )
 

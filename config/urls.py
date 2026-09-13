@@ -9,6 +9,8 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("apps.accounts.urls")),
     path("catalog/", include("apps.catalog.urls")),
+    path("notifications/", include("apps.notifications.urls")),
+    path("optimization/", include("apps.optimization.urls")),
     path("sourcing/", include("apps.sourcing.urls")),
     path("tenders/", include("apps.tender.urls")),
     path("", dashboard_view, name="dashboard"),

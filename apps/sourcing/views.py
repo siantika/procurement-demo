@@ -99,6 +99,7 @@ def _allocation_values(formset):
 def _result_queryset():
     return ProcurementResult.objects.select_related(
         "tender_revision__tender_request",
+        "optimization_run",
         "source_result",
         "created_by",
     ).prefetch_related(

@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Optimization {{ run.tender_request.internal_code }} · Procurement ERP{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <span class="eyebrow">{{ run.tender_request.internal_code }} · R{{ run.tender_revision.revision_number }}</span>
+        <h1>Optimization Run</h1>
+        <p>{{ run.algorithm_version }} · diminta oleh {{ run.requested_by.full_name }}</p>
+    </div>
+    <div class="form-actions">
+        <a class="button button-secondary" href="{% url 'tender:detail' run.tender_request.pk %}">Buka tender</a>
+        {% if run.status == "FAILED" %}
+            <form method="post" action="{% url 'optimization:run-retry' run.pk %}">
+                {% csrf_token %}
+                <button class="button button-primary" type="submit">Coba lagi</button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+
+{% if run.status == "PENDING" or run.status == "RUNNING" %}
+    <div class="alert status-alert" role="status"
+         data-run-status
+         data-status-url="{% url 'optimization:run-status' run.pk %}">
+        Optimization sedang {{ run.get_status_display|lower }}. Halaman akan diperbarui otomatis.
+    </div>
+{% elif run.status == "FAILED" %}
+    <div class="alert" role="alert">
+        <p>{{ run.safe_error_message }}</p>
+        <p>Referensi diagnostik: <span class="hash-value">{{ run.diagnostic_reference }}</span></p>
+    </div>
+{% endif %}
+
+<section class="card detail-card">
+    <dl class="detail-grid">
+        <div><dt>Status</dt><dd>{{ run.get_status_display }}</dd></div>
+        <div><dt>Jumlah hasil</dt><dd>{{ run.result_count }}</dd></div>
+        <div><dt>Mulai</dt><dd>{{ run.started_at|date:"d M Y H:i:s"|default:"Belum dimulai" }}</dd></div>
+        <div><dt>Selesai</dt><dd>{{ run.completed_at|date:"d M Y H:i:s"|default:"Belum selesai" }}</dd></div>
+        <div><dt>Input hash</dt><dd class="hash-value">{{ run.input_hash }}</dd></div>
+        {% if run.retry_of_run %}<div><dt>Retry dari</dt><dd><a href="{% url 'optimization:run-detail' run.retry_of_run.pk %}">{{ run.retry_of_run.pk }}</a></dd></div>{% endif %}
+    </dl>
+</section>
+
+<section class="card table-card content-section">
+    <div class="section-heading padded-heading">
+        <h2>Rekomendasi terurut</h2>
+        <p>Ranking memprioritaskan total purchase terendah.</p>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead><tr><th>Rank</th><th>Total purchase</th><th>Status</th><th>Aksi</th></tr></thead>
+            <tbody>
+                {% for result in results %}
+                    <tr>
+                        <td>#{{ result.rank }}</td>
+                        <td>Rp{{ result.total_purchase|floatformat:"2g" }}</td>
+                        <td><span class="status-badge">{{ result.get_status_display }}</span></td>
+                        <td><a href="{% url 'sourcing:result-detail' result.pk %}">Lihat result</a></td>
+                    </tr>
+                {% empty %}
+                    <tr><td class="empty-cell" colspan="4">{% if run.status == "COMPLETED" %}Tidak ada kandidat valid untuk snapshot ini.{% else %}Hasil belum tersedia.{% endif %}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+{% if run.candidate_rejections.all %}
+<section class="card table-card content-section">
+    <div class="section-heading padded-heading">
+        <h2>Kandidat tidak memenuhi syarat</h2>
+        <p>Informasi aman untuk penelusuran hasil optimizer.</p>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead><tr><th>Alasan</th><th>Candidate ID</th></tr></thead>
+            <tbody>
+                {% for rejection in run.candidate_rejections.all %}
+                    <tr><td>{{ rejection.reason_code }}</td><td class="hash-value">{{ rejection.candidate_identifier }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+    {% if run.status == "PENDING" or run.status == "RUNNING" %}
+        <script src="{% static 'optimization/js/run_status.js' %}" defer></script>
+    {% endif %}
+{% endblock %}

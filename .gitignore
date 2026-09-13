@@ -8,3 +8,6 @@ __pycache__/
 
 # Local development database
 db.sqlite3
+
+# Celery Beat runtime state
+celerybeat-schedule*

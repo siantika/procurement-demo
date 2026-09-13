@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Notifikasi · Procurement ERP{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <span class="eyebrow">Aktivitas</span>
+        <h1>Notifikasi</h1>
+        <p>Informasi terbaru dari proses bisnis yang Anda jalankan.</p>
+    </div>
+</div>
+<section class="card table-card">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead><tr><th>Status</th><th>Notifikasi</th><th>Waktu</th><th>Aksi</th></tr></thead>
+            <tbody>
+                {% for notification in notifications %}
+                    <tr>
+                        <td><span class="status-badge">{% if notification.is_read %}Dibaca{% else %}Baru{% endif %}</span></td>
+                        <td><strong>{{ notification.title }}</strong><br><span class="muted">{{ notification.message }}</span></td>
+                        <td>{{ notification.created_at|date:"d M Y H:i" }}</td>
+                        <td>
+                            <div class="inline-actions">
+                                {% if notification.source_entity_type == "OptimizationRun" %}<a href="{% url 'optimization:run-detail' notification.source_entity_id %}">Buka</a>{% endif %}
+                                {% if not notification.is_read %}
+                                    <form method="post" action="{% url 'notifications:mark-read' notification.pk %}">
+                                        {% csrf_token %}
+                                        <button class="text-button" type="submit">Tandai dibaca</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr><td class="empty-cell" colspan="4">Belum ada notifikasi.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

@@ -29,6 +29,7 @@
                         <a href="{% url 'tender:list' %}">Tender</a>
                         <a href="{% url 'sourcing:result-list' %}">Result</a>
                     {% endif %}
+                    <a href="{% url 'notifications:list' %}">Notifikasi</a>
                     <a href="{% url 'accounts:profile' %}">Profil</a>
                     <form method="post"
                           action="{% url 'accounts:logout' %}">

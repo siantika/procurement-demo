@@ -153,8 +153,13 @@ class ProcurementResult(models.Model):
         choices=ResultStatus.choices,
         default=ResultStatus.DRAFT,
     )
-    # M3 mengubah logical UUID ini menjadi FK setelah OptimizationRun ada.
-    optimization_run_id = models.UUIDField(null=True, blank=True)
+    optimization_run = models.ForeignKey(
+        "optimization.OptimizationRun",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="procurement_results",
+    )
     source_result = models.ForeignKey(
         "self",
         null=True,

@@ -19,7 +19,10 @@
                 {% for row in rows %}{% with result=row.result %}
                     <tr>
                         <td>{{ result.tender_revision.tender_request.internal_code }} · R{{ result.tender_revision.revision_number }}</td>
-                        <td>{{ result.get_source_type_display }}</td>
+                        <td>
+                            {{ result.get_source_type_display }}
+                            {% if result.optimization_run %}<br><a href="{% url 'optimization:run-detail' result.optimization_run.pk %}">Rank #{{ result.rank }}</a>{% endif %}
+                        </td>
                         <td><span class="status-badge">{{ result.get_status_display }}</span></td>
                         <td>{% if result.total_purchase %}Rp{{ result.total_purchase|floatformat:"2g" }}{% else %}Belum dihitung{% endif %}</td>
                         <td>{% if row.selected %}<span class="status-badge">Terpilih</span>{% else %}—{% endif %}</td>

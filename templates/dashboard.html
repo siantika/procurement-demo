@@ -45,6 +45,12 @@
             <h2>Procurement Result</h2>
             <p>Susun, validasi, bandingkan, dan pilih alternatif sourcing.</p>
         </a>
+        <a class="card module-card module-link"
+           href="{% url 'optimization:run-list' %}">
+            <span class="module-icon" aria-hidden="true">OP</span>
+            <h2>Optimization</h2>
+            <p>Jalankan optimizer dan tinjau rekomendasi terurut.</p>
+        </a>
     {% elif user.role == "MANAGER" %}
         <article class="card module-card">
             <span class="module-icon" aria-hidden="true">AP</span>

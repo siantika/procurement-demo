@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Optimization · Procurement ERP{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <span class="eyebrow">Sourcing</span>
+        <h1>Optimization Run</h1>
+        <p>Riwayat proses rekomendasi sourcing dari snapshot tender.</p>
+    </div>
+    <a class="button button-primary" href="{% url 'tender:list' %}">Pilih tender</a>
+</div>
+<section class="card table-card">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr><th>Tender</th><th>Status</th><th>Hasil</th><th>Algoritma</th><th>Diminta</th><th>Aksi</th></tr>
+            </thead>
+            <tbody>
+                {% for run in runs %}
+                    <tr>
+                        <td>{{ run.tender_request.internal_code }} · R{{ run.tender_revision.revision_number }}</td>
+                        <td><span class="status-badge">{{ run.get_status_display }}</span></td>
+                        <td>{{ run.result_count }} rekomendasi</td>
+                        <td>{{ run.algorithm_version }}</td>
+                        <td>{{ run.created_at|date:"d M Y H:i" }}</td>
+                        <td><a href="{% url 'optimization:run-detail' run.pk %}">Buka</a></td>
+                    </tr>
+                {% empty %}
+                    <tr><td class="empty-cell" colspan="6">Belum ada Optimization Run.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

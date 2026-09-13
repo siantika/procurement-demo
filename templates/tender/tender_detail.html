@@ -8,7 +8,11 @@
     <div class="form-actions">
         <a class="button button-secondary" href="{% url 'sourcing:result-list' %}?tender={{ tender.pk }}">Lihat result</a>
         <a class="button button-secondary" href="{% url 'sourcing:result-create' %}?revision={{ revision.pk }}">Buat result manual</a>
-        <a class="button button-primary" href="{% url 'tender:revise' tender.pk %}">Buat revision</a>
+        <form method="post" action="{% url 'optimization:run-create' tender.pk %}">
+            {% csrf_token %}
+            <button class="button button-primary" type="submit">Jalankan optimizer</button>
+        </form>
+        <a class="button button-secondary" href="{% url 'tender:revise' tender.pk %}">Buat revision</a>
     </div>
 </div>
 <section class="card detail-card">
@@ -18,6 +22,13 @@
         <div><dt>Alamat instansi</dt><dd>{{ revision.institution_address|default:"—" }}</dd></div>
         <div><dt>Content hash</dt><dd class="hash-value">{{ revision.content_hash }}</dd></div>
     </dl>
+</section>
+<section class="card table-card content-section">
+    <div class="section-heading padded-heading"><h2>Riwayat optimization</h2><p>Setiap run memakai snapshot input yang terpisah.</p></div>
+    <div class="table-wrap"><table class="data-table">
+        <thead><tr><th>Revision</th><th>Status</th><th>Hasil</th><th>Waktu</th><th>Aksi</th></tr></thead>
+        <tbody>{% for run in optimization_runs %}<tr><td>R{{ run.tender_revision.revision_number }}</td><td><span class="status-badge">{{ run.get_status_display }}</span></td><td>{{ run.result_count }}</td><td>{{ run.created_at|date:"d M Y H:i" }}</td><td><a href="{% url 'optimization:run-detail' run.pk %}">Buka</a></td></tr>{% empty %}<tr><td class="empty-cell" colspan="5">Belum ada Optimization Run.</td></tr>{% endfor %}</tbody>
+    </table></div>
 </section>
 <section class="card table-card content-section">
     <div class="section-heading padded-heading"><h2>Item kebutuhan</h2><p>Snapshot produk pada revision aktif.</p></div>
