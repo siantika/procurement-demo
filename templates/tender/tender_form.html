@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} · Procurement ERP{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div><span class="eyebrow">Tender</span><h1>{{ title }}</h1><p>Kebutuhan yang disimpan menjadi snapshot historis immutable.</p></div>
+</div>
+<form method="post" class="stack-form" novalidate>
+    {% csrf_token %}
+    <section class="card form-card">
+        <div class="section-heading"><h2>Informasi tender</h2><p>Identitas dan batas anggaran dari instansi.</p></div>
+        {% include "components/form_fields.html" with form=form %}
+    </section>
+    <section class="card form-card">
+        <div class="section-heading"><h2>Item kebutuhan</h2><p>Minimal satu item dengan jumlah lebih dari nol.</p></div>
+        {{ formset.management_form }}
+        {% if formset.non_form_errors %}<div class="alert" role="alert">{% for error in formset.non_form_errors %}<p>{{ error }}</p>{% endfor %}</div>{% endif %}
+        <div class="item-grid">
+            {% for item_form in formset %}
+                <fieldset class="item-card">
+                    <legend>Item {{ forloop.counter }}</legend>
+                    {% include "components/form_fields.html" with form=item_form %}
+                </fieldset>
+            {% endfor %}
+        </div>
+    </section>
+    <div class="form-actions">
+        <button class="button button-primary" type="submit">Simpan tender</button>
+        <a class="button button-secondary" href="{% url 'tender:list' %}">Batal</a>
+    </div>
+</form>
+{% endblock %}

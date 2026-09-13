@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} · Procurement ERP{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <span class="eyebrow">{{ section }}</span>
+        <h1>{{ title }}</h1>
+        <p>Lengkapi data dan simpan perubahan yang dapat ditelusuri.</p>
+    </div>
+</div>
+<section class="card form-card">
+    <form method="post" class="stack-form" novalidate>
+        {% csrf_token %}
+        {% include "components/form_fields.html" %}
+        <div class="form-actions">
+            <button class="button button-primary" type="submit">Simpan</button>
+            {% if section == "Produk" %}
+                <a class="button button-secondary" href="{% url 'catalog:product-list' %}">Batal</a>
+            {% else %}
+                <a class="button button-secondary" href="{% url 'catalog:supplier-list' %}">Batal</a>
+            {% endif %}
+        </div>
+    </form>
+</section>
+{% endblock %}

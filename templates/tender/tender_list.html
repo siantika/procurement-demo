@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Tender · Procurement ERP{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div><span class="eyebrow">Kebutuhan instansi</span><h1>Tender</h1><p>Setiap perubahan kebutuhan disimpan sebagai revision baru.</p></div>
+    <a class="button button-primary" href="{% url 'tender:create' %}">Catat tender</a>
+</div>
+<section class="card table-card"><div class="table-wrap"><table class="data-table">
+    <thead><tr><th>Kode</th><th>Revision</th><th>Dibuat oleh</th><th>Diperbarui</th><th>Aksi</th></tr></thead>
+    <tbody>{% for tender in tenders %}<tr>
+        <td>{{ tender.internal_code }}</td><td>R{{ tender.current_revision_number }}</td>
+        <td>{{ tender.created_by.full_name }}</td><td>{{ tender.updated_at|date:"d M Y H:i" }}</td>
+        <td><a href="{% url 'tender:detail' tender.pk %}">Lihat detail</a></td>
+    </tr>{% empty %}<tr><td colspan="5" class="empty-cell">Belum ada tender.</td></tr>{% endfor %}</tbody>
+</table></div></section>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} · Procurement ERP{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <span class="eyebrow">Supplier offer</span>
+        <h1>{{ title }}</h1>
+        {% if mode == "supersede" %}
+            <p>Versi lama dipertahankan dan offer baru akan menjadi acuan transaksi berikutnya.</p>
+        {% else %}
+            <p>Harga net dihitung oleh sistem menggunakan kebijakan kalkulasi canonical.</p>
+        {% endif %}
+    </div>
+</div>
+<section class="card form-card">
+    <form method="post" class="stack-form" novalidate>
+        {% csrf_token %}
+        {% include "components/form_fields.html" %}
+        <div class="form-actions">
+            <button class="button button-primary" type="submit">Simpan offer</button>
+            <a class="button button-secondary" href="{% url 'sourcing:offer-list' %}">Batal</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

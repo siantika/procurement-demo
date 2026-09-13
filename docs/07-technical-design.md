@@ -621,6 +621,21 @@ total_purchase
 
 `SupplierOffer.net_purchase_price` dihitung saat offer dibuat atau disupersede. Validator tetap menghitung ulang dan membandingkan dengan snapshot untuk mendeteksi data korup atau version mismatch.
 
+Eligibility dievaluasi oleh pure policy dari nilai scalar, sehingga input yang
+sama dapat dibangun dari row aktif maupun `OptimizationRun.input_snapshot`.
+Policy mengembalikan `eligible`, reason code, dan safe message dengan urutan
+alasan stabil: status offer, status Product, status Supplier, currency,
+kecocokan Product, net price, availability, lalu batas tanggal. Tanggal
+`valid_from` dan `valid_until` bersifat inklusif. Diskon 100 persen boleh
+direkam, tetapi hasil net price nol menghasilkan `NON_POSITIVE_NET_PRICE`.
+
+Identity Supplier dan Product pada satu SupplierOffer tidak dapat dikoreksi
+atau diganti saat supersede. Pasangan identity yang berbeda harus dibuat
+sebagai offer baru. Offer dianggap memiliki histori bila telah disupersede,
+direferensikan allocation, atau `offer_id`-nya terdapat pada
+`input_snapshot.data.eligible_offers`; setelah itu koreksi in-place ditolak.
+Supersede menulis audit pada offer lama dan pada offer pengganti.
+
 ### 11.3 Bid Pricing
 
 ```text

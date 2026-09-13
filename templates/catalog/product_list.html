@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Produk · Procurement ERP{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <span class="eyebrow">Master data</span>
+        <h1>Produk</h1>
+        <p>Produk aktif dapat digunakan pada offer dan revision tender baru.</p>
+    </div>
+    <a class="button button-primary" href="{% url 'catalog:product-create' %}">Tambah produk</a>
+</div>
+<section class="card table-card">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead><tr><th>Kode</th><th>Nama</th><th>Satuan</th><th>Status</th><th>Aksi</th></tr></thead>
+            <tbody>
+                {% for product in products %}
+                    <tr>
+                        <td><a href="{% url 'catalog:product-detail' product.pk %}">{{ product.code }}</a></td><td>{{ product.name }}</td>
+                        <td>{{ product.default_unit }}</td>
+                        <td><span class="status-badge">{% if product.is_active %}Aktif{% else %}Nonaktif{% endif %}</span></td>
+                        <td><div class="inline-actions">
+                            <a href="{% url 'catalog:product-update' product.pk %}">Ubah</a>
+                            {% if product.is_active %}<form method="post" action="{% url 'catalog:product-deactivate' product.pk %}">{% csrf_token %}<input type="hidden" name="expected_version" value="{{ product.version }}"><button class="text-button danger-text" type="submit">Nonaktifkan</button></form>{% endif %}
+                        </div></td>
+                    </tr>
+                {% empty %}<tr><td colspan="5" class="empty-cell">Belum ada produk.</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Offer {{ offer.supplier.code }} · Procurement ERP{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <span class="eyebrow">Supplier offer</span>
+        <h1>{{ offer.supplier.name }} — {{ offer.product.name }}</h1>
+        <p>Referensi {{ offer.supplier_reference|default:"tanpa nomor" }}.</p>
+    </div>
+    <div class="form-actions">
+        <a class="button button-secondary"
+           href="{% url 'sourcing:offer-update' offer.pk %}">Koreksi</a>
+        <a class="button button-primary"
+           href="{% url 'sourcing:offer-supersede' offer.pk %}">Buat versi baru</a>
+    </div>
+</div>
+<section class="card detail-card">
+    <dl class="detail-grid">
+        <div><dt>Harga dasar</dt><dd>Rp{{ offer.base_unit_price|floatformat:"2g" }}</dd></div>
+        <div><dt>Diskon</dt><dd>{{ offer.discount_percent }}%</dd></div>
+        <div><dt>Harga net</dt><dd>Rp{{ offer.net_purchase_price|floatformat:"2g" }}</dd></div>
+        <div><dt>Jumlah tersedia</dt><dd>{{ offer.available_quantity|default_if_none:"Tanpa batas" }}</dd></div>
+        <div><dt>Berlaku mulai</dt><dd>{{ offer.valid_from|date:"d M Y"|default:"—" }}</dd></div>
+        <div><dt>Berlaku sampai</dt><dd>{{ offer.valid_until|date:"d M Y"|default:"—" }}</dd></div>
+        <div><dt>Eligibility</dt><dd>{% if eligibility.eligible %}Eligible{% else %}Tidak eligible — {{ eligibility.message }}{% endif %}</dd></div>
+        <div><dt>Kebijakan kalkulasi</dt><dd>{{ offer.calculation_version }}</dd></div>
+        <div><dt>Versi data</dt><dd>{{ offer.version }}</dd></div>
+        {% if offer.supersedes_offer %}
+            <div><dt>Menggantikan offer</dt><dd>{{ offer.supersedes_offer.pk }}</dd></div>
+        {% endif %}
+    </dl>
+</section>
+{% endblock %}

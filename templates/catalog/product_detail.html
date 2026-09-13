@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }} · Procurement ERP{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <span class="eyebrow">Produk {{ product.code }}</span>
+        <h1>{{ product.name }}</h1>
+        <p>Master data produk dan satuan canonical.</p>
+    </div>
+    <a class="button button-primary"
+       href="{% url 'catalog:product-update' product.pk %}">Ubah produk</a>
+</div>
+<section class="card detail-card">
+    <dl class="detail-grid">
+        <div><dt>Kode</dt><dd>{{ product.code }}</dd></div>
+        <div><dt>Satuan</dt><dd>{{ product.default_unit }}</dd></div>
+        <div><dt>Status</dt><dd>{% if product.is_active %}Aktif{% else %}Nonaktif{% endif %}</dd></div>
+        <div><dt>Versi</dt><dd>{{ product.version }}</dd></div>
+        <div><dt>Dibuat oleh</dt><dd>{{ product.created_by.full_name }}</dd></div>
+        <div><dt>Deskripsi</dt><dd>{{ product.description|default:"—" }}</dd></div>
+    </dl>
+</section>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Supplier · Procurement ERP{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div><span class="eyebrow">Master data</span><h1>Supplier</h1><p>Profil supplier dipertahankan untuk kebutuhan histori.</p></div>
+    <a class="button button-primary" href="{% url 'catalog:supplier-create' %}">Tambah supplier</a>
+</div>
+<section class="card table-card"><div class="table-wrap"><table class="data-table">
+    <thead><tr><th>Kode</th><th>Nama</th><th>Kontak</th><th>Status</th><th>Aksi</th></tr></thead>
+    <tbody>{% for supplier in suppliers %}<tr>
+        <td><a href="{% url 'catalog:supplier-detail' supplier.pk %}">{{ supplier.code }}</a></td><td>{{ supplier.name }}</td>
+        <td>{{ supplier.contact_name|default:"—" }}</td>
+        <td><span class="status-badge">{% if supplier.is_active %}Aktif{% else %}Nonaktif{% endif %}</span></td>
+        <td><div class="inline-actions"><a href="{% url 'catalog:supplier-update' supplier.pk %}">Ubah</a>{% if supplier.is_active %}<form method="post" action="{% url 'catalog:supplier-deactivate' supplier.pk %}">{% csrf_token %}<input type="hidden" name="expected_version" value="{{ supplier.version }}"><button class="text-button danger-text" type="submit">Nonaktifkan</button></form>{% endif %}</div></td>
+    </tr>{% empty %}<tr><td colspan="5" class="empty-cell">Belum ada supplier.</td></tr>{% endfor %}</tbody>
+</table></div></section>
+{% endblock %}

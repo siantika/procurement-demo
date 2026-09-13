@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}{{ tender.internal_code }} · Procurement ERP{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div><span class="eyebrow">Tender {{ tender.internal_code }}</span><h1>{{ revision.title }}</h1><p>{{ revision.institution_name }} · Revision {{ revision.revision_number }}</p></div>
+    <a class="button button-primary" href="{% url 'tender:revise' tender.pk %}">Buat revision</a>
+</div>
+<section class="card detail-card">
+    <dl class="detail-grid">
+        <div><dt>Referensi</dt><dd>{{ revision.tender_reference_number|default:"—" }}</dd></div>
+        <div><dt>Total HPS</dt><dd>{% if revision.total_hps %}Rp{{ revision.total_hps|floatformat:"2g" }}{% else %}Tidak tersedia{% endif %}</dd></div>
+        <div><dt>Alamat instansi</dt><dd>{{ revision.institution_address|default:"—" }}</dd></div>
+        <div><dt>Content hash</dt><dd class="hash-value">{{ revision.content_hash }}</dd></div>
+    </dl>
+</section>
+<section class="card table-card content-section">
+    <div class="section-heading padded-heading"><h2>Item kebutuhan</h2><p>Snapshot produk pada revision aktif.</p></div>
+    <div class="table-wrap"><table class="data-table">
+        <thead><tr><th>Baris</th><th>Produk</th><th>Jumlah</th><th>Spesifikasi</th></tr></thead>
+        <tbody>{% for item in revision.items.all %}<tr><td>{{ item.line_number }}</td><td>{{ item.product_snapshot.code }} — {{ item.product_snapshot.name }}</td><td>{{ item.requested_quantity }} {{ item.unit }}</td><td>{{ item.specification|default:"—" }}</td></tr>{% endfor %}</tbody>
+    </table></div>
+</section>
+<section class="card table-card content-section">
+    <div class="section-heading padded-heading"><h2>Riwayat revision</h2><p>Revision lama tetap tersedia dan tidak berubah.</p></div>
+    <div class="table-wrap"><table class="data-table">
+        <thead><tr><th>Revision</th><th>Alasan</th><th>Dibuat oleh</th><th>Waktu</th></tr></thead>
+        <tbody>{% for history in revisions %}<tr><td>R{{ history.revision_number }}</td><td>{{ history.revision_reason|default:"Revision awal" }}</td><td>{{ history.created_by.full_name }}</td><td>{{ history.created_at|date:"d M Y H:i" }}</td></tr>{% endfor %}</tbody>
+    </table></div>
+</section>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}{{ supplier.name }} · Procurement ERP{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <span class="eyebrow">Supplier {{ supplier.code }}</span>
+        <h1>{{ supplier.name }}</h1>
+        <p>Informasi kontak supplier untuk sourcing.</p>
+    </div>
+    <a class="button button-primary"
+       href="{% url 'catalog:supplier-update' supplier.pk %}">Ubah supplier</a>
+</div>
+<section class="card detail-card">
+    <dl class="detail-grid">
+        <div><dt>Kode</dt><dd>{{ supplier.code }}</dd></div>
+        <div><dt>Status</dt><dd>{% if supplier.is_active %}Aktif{% else %}Nonaktif{% endif %}</dd></div>
+        <div><dt>Nama kontak</dt><dd>{{ supplier.contact_name|default:"—" }}</dd></div>
+        <div><dt>Email</dt><dd>{{ supplier.email|default:"—" }}</dd></div>
+        <div><dt>Telepon</dt><dd>{{ supplier.phone|default:"—" }}</dd></div>
+        <div><dt>Alamat</dt><dd>{{ supplier.address|default:"—" }}</dd></div>
+    </dl>
+</section>
+{% endblock %}

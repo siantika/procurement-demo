@@ -21,6 +21,13 @@
             <nav class="main-nav" aria-label="Navigasi utama">
                 {% if user.is_authenticated %}
                     <a href="{% url 'dashboard' %}">Dashboard</a>
+                    {% if user.role == "ADMIN" %}
+                        <a href="{% url 'catalog:product-list' %}">Produk</a>
+                        <a href="{% url 'catalog:supplier-list' %}">Supplier</a>
+                    {% elif user.role == "PROCUREMENT_STAFF" %}
+                        <a href="{% url 'sourcing:offer-list' %}">Offer</a>
+                        <a href="{% url 'tender:list' %}">Tender</a>
+                    {% endif %}
                     <a href="{% url 'accounts:profile' %}">Profil</a>
                     <form method="post"
                           action="{% url 'accounts:logout' %}">
@@ -37,6 +44,13 @@
     </header>
 
     <main class="page-shell">
+        {% if messages %}
+            <div class="message-list" aria-live="polite">
+                {% for message in messages %}
+                    <div class="alert" role="status">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
         {% block content %}{% endblock %}
     </main>
 </body>

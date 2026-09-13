@@ -16,6 +16,9 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "apps.accounts.apps.AccountsConfig",
     "apps.audit.apps.AuditConfig",
+    "apps.catalog.apps.CatalogConfig",
+    "apps.sourcing.apps.SourcingConfig",
+    "apps.tender.apps.TenderConfig",
 ]
 
 MIDDLEWARE = [

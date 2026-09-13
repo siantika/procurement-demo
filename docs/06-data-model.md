@@ -414,7 +414,7 @@ Tabel permission/group bawaan Django tetap dapat dibuat, tetapi role bisnis demo
 | `id` | `uuid` | Tidak | PK | Product identity |
 | `code` | `varchar(50)` | Tidak | UNIQUE | SKU/kode internal stabil |
 | `name` | `varchar(255)` | Tidak | — | Nama Product |
-| `description` | `text` | Ya | — | Deskripsi Product |
+| `description` | `text` | Tidak | string kosong jika tidak diisi | Deskripsi Product |
 | `default_unit` | `varchar(32)` | Tidak | — | Satuan default, misalnya unit/box |
 | `is_active` | `boolean` | Tidak | `true` | Eligibility transaksi baru |
 | `version` | `integer` | Tidak | `1`, CHECK `> 0` | Optimistic concurrency |
@@ -429,10 +429,10 @@ Tabel permission/group bawaan Django tetap dapat dibuat, tetapi role bisnis demo
 | `id` | `uuid` | Tidak | PK | Supplier identity |
 | `code` | `varchar(50)` | Tidak | UNIQUE | Kode internal stabil |
 | `name` | `varchar(255)` | Tidak | — | Nama Supplier |
-| `contact_name` | `varchar(255)` | Ya | — | Kontak utama |
-| `email` | `varchar(254)` | Ya | — | Email kontak |
-| `phone` | `varchar(50)` | Ya | — | Nomor telepon sebagai text |
-| `address` | `text` | Ya | — | Alamat Supplier |
+| `contact_name` | `varchar(255)` | Tidak | string kosong jika tidak diisi | Kontak utama |
+| `email` | `varchar(254)` | Tidak | string kosong jika tidak diisi | Email kontak |
+| `phone` | `varchar(50)` | Tidak | string kosong jika tidak diisi | Nomor telepon sebagai text |
+| `address` | `text` | Tidak | string kosong jika tidak diisi | Alamat Supplier |
 | `is_active` | `boolean` | Tidak | `true` | Eligibility offer baru |
 | `version` | `integer` | Tidak | `1`, CHECK `> 0` | Optimistic concurrency |
 | `created_by_id` | `uuid` | Tidak | FK → User, PROTECT | Admin pembuat |
@@ -449,7 +449,7 @@ Tabel permission/group bawaan Django tetap dapat dibuat, tetapi role bisnis demo
 | `supplier_id` | `uuid` | Tidak | FK → Supplier, PROTECT | Supplier pemberi offer |
 | `product_id` | `uuid` | Tidak | FK → Product, PROTECT | Product yang ditawarkan |
 | `supersedes_offer_id` | `uuid` | Ya | Self FK, PROTECT | Offer lama yang digantikan |
-| `supplier_reference` | `varchar(100)` | Ya | — | Nomor referensi dari Supplier |
+| `supplier_reference` | `varchar(100)` | Tidak | string kosong jika tidak diisi | Nomor referensi dari Supplier |
 | `base_unit_price` | `numeric(20,4)` | Tidak | CHECK `> 0` | Harga dasar per unit |
 | `discount_percent` | `numeric(7,4)` | Tidak | `0`, CHECK `0..100` | Discount |
 | `net_purchase_price` | `numeric(20,4)` | Tidak | CHECK `>= 0` | Hasil canonical calculation; hanya nilai `> 0` yang eligible |
@@ -487,14 +487,14 @@ Tabel ini menyimpan identity stabil Tender. Isi kebutuhan berada pada revision.
 | `id` | `uuid` | Tidak | PK | Revision identity |
 | `tender_request_id` | `uuid` | Tidak | FK → TenderRequest, CASCADE | Parent aggregate |
 | `revision_number` | `integer` | Tidak | CHECK `> 0`, UNIQUE per Tender | Nomor revision |
-| `tender_reference_number` | `varchar(100)` | Ya | — | Nomor tender dari instansi |
+| `tender_reference_number` | `varchar(100)` | Tidak | string kosong jika tidak diisi | Nomor tender dari instansi |
 | `institution_name` | `varchar(255)` | Tidak | — | Institution disimpan sebagai value |
-| `institution_address` | `text` | Ya | — | Alamat pada revision |
+| `institution_address` | `text` | Tidak | string kosong jika tidak diisi | Alamat pada revision |
 | `title` | `varchar(255)` | Tidak | — | Judul tender |
-| `description` | `text` | Ya | — | Metadata/keterangan tender |
+| `description` | `text` | Tidak | string kosong jika tidak diisi | Metadata/keterangan tender |
 | `currency` | `char(3)` | Tidak | `IDR`, CHECK `IDR` | Currency revision |
 | `total_hps` | `numeric(20,2)` | Ya | CHECK `> 0` jika diisi | Batas HPS |
-| `revision_reason` | `text` | Ya | Wajib jika revision > 1 | Alasan perubahan resmi |
+| `revision_reason` | `text` | Tidak | string kosong pada revision 1; wajib jika revision > 1 | Alasan perubahan resmi |
 | `content_hash` | `char(64)` | Tidak | — | Hash canonical revision + item |
 | `created_by_id` | `uuid` | Tidak | FK → User, PROTECT | Staff pembuat revision |
 | `created_at` | `timestamptz` | Tidak | now | Waktu revision dibuat |
@@ -512,8 +512,8 @@ Revision bersifat immutable setelah transaction pembuatan selesai.
 | `product_snapshot` | `jsonb` | Tidak | schema version wajib | Seluruh atribut Product saat revision |
 | `requested_quantity` | `numeric(18,3)` | Tidak | CHECK `> 0` | Quantity kebutuhan |
 | `unit` | `varchar(32)` | Tidak | — | Satuan pada tender |
-| `specification` | `text` | Ya | — | Persyaratan teknis |
-| `description` | `text` | Ya | — | Keterangan item |
+| `specification` | `text` | Tidak | string kosong jika tidak diisi | Persyaratan teknis |
+| `description` | `text` | Tidak | string kosong jika tidak diisi | Keterangan item |
 | `created_at` | `timestamptz` | Tidak | now | Waktu item dibuat |
 
 ### 5.5 Optimization

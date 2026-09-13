@@ -14,27 +14,31 @@
 
 <section class="module-grid" aria-label="Modul procurement">
     {% if user.role == "ADMIN" %}
-        <article class="card module-card">
+        <a class="card module-card module-link"
+           href="{% url 'catalog:product-list' %}">
             <span class="module-icon" aria-hidden="true">PR</span>
             <h2>Produk</h2>
             <p>Kelola katalog dan spesifikasi produk medis.</p>
-        </article>
-        <article class="card module-card">
+        </a>
+        <a class="card module-card module-link"
+           href="{% url 'catalog:supplier-list' %}">
             <span class="module-icon" aria-hidden="true">SP</span>
             <h2>Supplier</h2>
             <p>Simpan profil dan informasi pemasok tepercaya.</p>
-        </article>
+        </a>
     {% elif user.role == "PROCUREMENT_STAFF" %}
-        <article class="card module-card">
-            <span class="module-icon" aria-hidden="true">PO</span>
+        <a class="card module-card module-link"
+           href="{% url 'tender:list' %}">
+            <span class="module-icon" aria-hidden="true">TR</span>
             <h2>Pengadaan</h2>
-            <p>Pantau kebutuhan dan proses pembelian aktif.</p>
-        </article>
-        <article class="card module-card">
+            <p>Catat kebutuhan instansi dalam revision yang terlacak.</p>
+        </a>
+        <a class="card module-card module-link"
+           href="{% url 'sourcing:offer-list' %}">
             <span class="module-icon" aria-hidden="true">QT</span>
             <h2>Penawaran</h2>
-            <p>Bandingkan harga dan penawaran supplier.</p>
-        </article>
+            <p>Bandingkan harga, diskon, dan kapasitas supplier.</p>
+        </a>
         <article class="card module-card">
             <span class="module-icon" aria-hidden="true">OP</span>
             <h2>Optimasi</h2>

@@ -30,7 +30,7 @@ Table catalog_product {
   id uuid [pk]
   code varchar(50) [not null, unique, note: 'Django migration also enforces case-insensitive uniqueness']
   name varchar(255) [not null]
-  description text
+  description text [not null, note: 'Application uses empty string when absent']
   default_unit varchar(32) [not null]
   is_active boolean [not null, default: true]
   version integer [not null, default: 1]
@@ -47,10 +47,10 @@ Table catalog_supplier {
   id uuid [pk]
   code varchar(50) [not null, unique, note: 'Django migration also enforces case-insensitive uniqueness']
   name varchar(255) [not null]
-  contact_name varchar(255)
-  email varchar(254)
-  phone varchar(50)
-  address text
+  contact_name varchar(255) [not null, note: 'Application uses empty string when absent']
+  email varchar(254) [not null, note: 'Application uses empty string when absent']
+  phone varchar(50) [not null, note: 'Application uses empty string when absent']
+  address text [not null, note: 'Application uses empty string when absent']
   is_active boolean [not null, default: true]
   version integer [not null, default: 1]
   created_by_id uuid [not null, ref: > accounts_user.id, note: 'PROTECT']
@@ -67,7 +67,7 @@ Table sourcing_supplier_offer {
   supplier_id uuid [not null, ref: > catalog_supplier.id, note: 'PROTECT']
   product_id uuid [not null, ref: > catalog_product.id, note: 'PROTECT']
   supersedes_offer_id uuid [ref: > sourcing_supplier_offer.id, unique, note: 'PROTECT; nullable']
-  supplier_reference varchar(100)
+  supplier_reference varchar(100) [not null, note: 'Application uses empty string when absent']
   base_unit_price numeric(20,4) [not null]
   discount_percent numeric(7,4) [not null, default: 0]
   net_purchase_price numeric(20,4) [not null, note: 'May be zero for recorded 100% discount; eligibility requires > 0']
@@ -106,14 +106,14 @@ Table tender_tender_request_revision {
   id uuid [pk]
   tender_request_id uuid [not null, ref: > tender_tender_request.id, note: 'CASCADE inside aggregate']
   revision_number integer [not null]
-  tender_reference_number varchar(100)
+  tender_reference_number varchar(100) [not null, note: 'Application uses empty string when absent']
   institution_name varchar(255) [not null]
-  institution_address text
+  institution_address text [not null, note: 'Application uses empty string when absent']
   title varchar(255) [not null]
-  description text
+  description text [not null, note: 'Application uses empty string when absent']
   currency char(3) [not null, default: 'IDR']
   total_hps numeric(20,2)
-  revision_reason text
+  revision_reason text [not null, note: 'Application uses empty string when absent']
   content_hash char(64) [not null]
   created_by_id uuid [not null, ref: > accounts_user.id, note: 'PROTECT']
   created_at timestamptz [not null, default: `now()`]
@@ -133,8 +133,8 @@ Table tender_tender_request_item {
   product_snapshot jsonb [not null]
   requested_quantity numeric(18,3) [not null]
   unit varchar(32) [not null]
-  specification text
-  description text
+  specification text [not null, note: 'Application uses empty string when absent']
+  description text [not null, note: 'Application uses empty string when absent']
   created_at timestamptz [not null, default: `now()`]
 
   indexes {

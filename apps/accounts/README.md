@@ -8,7 +8,8 @@ semua TODO sekaligus.
 - custom User, form, login/logout/profile, dan dashboard selesai;
 - Django Admin dan authorization policy selesai;
 - account services sudah transactional dan menulis AuditEvent;
-- `seed_demo` sudah membuat tiga akun canonical secara idempotent;
+- `seed_demo` sudah membuat tiga akun dan dataset bisnis canonical secara
+  idempotent;
 - perluasan service bisnis berikutnya dilakukan di app pemilik aggregate.
 
 ## Urutan pengerjaan
