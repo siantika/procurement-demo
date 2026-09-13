@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} · Procurement ERP{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <span class="eyebrow">Procurement Result</span>
+        <h1>{{ title }}</h1>
+        <p>Allocation dapat disimpan sebagai DRAFT dan divalidasi setelah seluruh kebutuhan terpenuhi.</p>
+    </div>
+</div>
+{% if not is_update and not revision %}
+<form method="get" class="stack-form">
+    <section class="card form-card">
+        <div class="section-heading">
+            <h2>Sumber kebutuhan</h2>
+            <p>Pilih revision tender aktif sebelum mengisi supplier allocation.</p>
+        </div>
+        {% include "components/form_fields.html" with form=form %}
+    </section>
+    <div class="form-actions">
+        <button class="button button-primary" type="submit">Lanjutkan</button>
+        <a class="button button-secondary" href="{% url 'sourcing:result-list' %}">Batal</a>
+    </div>
+</form>
+{% else %}
+<form method="post" class="stack-form" novalidate>
+    {% csrf_token %}
+    <section class="card form-card">
+        <div class="section-heading">
+            <h2>Sumber kebutuhan</h2>
+            <p>Result selalu mengacu pada satu revision tender yang immutable.</p>
+        </div>
+        {% if is_update %}
+            {{ form.expected_version }}
+            <p><strong>{{ result.tender_revision.tender_request.internal_code }}</strong> — Revision {{ result.tender_revision.revision_number }}</p>
+            {% if form.non_field_errors %}<div class="alert" role="alert">{% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}</div>{% endif %}
+        {% else %}
+            <input type="hidden" name="tender_revision" value="{{ revision.pk }}">
+            <p><strong>{{ revision.tender_request.internal_code }}</strong> — Revision {{ revision.revision_number }}: {{ revision.title }}</p>
+            {% if form.non_field_errors %}<div class="alert" role="alert">{% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}</div>{% endif %}
+        {% endif %}
+    </section>
+    <section class="card form-card">
+        <div class="section-heading">
+            <h2>Supplier allocation</h2>
+            <p>Gunakan beberapa baris untuk membagi kebutuhan kepada lebih dari satu supplier.</p>
+        </div>
+        {{ formset.management_form }}
+        {% if formset.non_form_errors %}
+            <div class="alert" role="alert">
+                {% for error in formset.non_form_errors %}<p>{{ error }}</p>{% endfor %}
+            </div>
+        {% endif %}
+        <div class="item-grid">
+            {% for allocation_form in formset %}
+                <fieldset class="item-card">
+                    <legend>Allocation {{ forloop.counter }}</legend>
+                    {% include "components/form_fields.html" with form=allocation_form %}
+                </fieldset>
+            {% endfor %}
+        </div>
+    </section>
+    <div class="form-actions">
+        <button class="button button-primary" type="submit">Simpan DRAFT</button>
+        <a class="button button-secondary" href="{% url 'sourcing:result-list' %}">Batal</a>
+    </div>
+</form>
+{% endif %}
+{% endblock %}

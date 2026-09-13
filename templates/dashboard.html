@@ -39,11 +39,12 @@
             <h2>Penawaran</h2>
             <p>Bandingkan harga, diskon, dan kapasitas supplier.</p>
         </a>
-        <article class="card module-card">
-            <span class="module-icon" aria-hidden="true">OP</span>
-            <h2>Optimasi</h2>
-            <p>Temukan kombinasi pembelian yang lebih efisien.</p>
-        </article>
+        <a class="card module-card module-link"
+           href="{% url 'sourcing:result-list' %}">
+            <span class="module-icon" aria-hidden="true">RS</span>
+            <h2>Procurement Result</h2>
+            <p>Susun, validasi, bandingkan, dan pilih alternatif sourcing.</p>
+        </a>
     {% elif user.role == "MANAGER" %}
         <article class="card module-card">
             <span class="module-icon" aria-hidden="true">AP</span>

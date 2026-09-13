@@ -5,7 +5,11 @@
 {% block content %}
 <div class="page-heading">
     <div><span class="eyebrow">Tender {{ tender.internal_code }}</span><h1>{{ revision.title }}</h1><p>{{ revision.institution_name }} · Revision {{ revision.revision_number }}</p></div>
-    <a class="button button-primary" href="{% url 'tender:revise' tender.pk %}">Buat revision</a>
+    <div class="form-actions">
+        <a class="button button-secondary" href="{% url 'sourcing:result-list' %}?tender={{ tender.pk }}">Lihat result</a>
+        <a class="button button-secondary" href="{% url 'sourcing:result-create' %}?revision={{ revision.pk }}">Buat result manual</a>
+        <a class="button button-primary" href="{% url 'tender:revise' tender.pk %}">Buat revision</a>
+    </div>
 </div>
 <section class="card detail-card">
     <dl class="detail-grid">

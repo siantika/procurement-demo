@@ -611,7 +611,7 @@ class AccountViewTests(TestCase):
             ),
             (
                 self.user,
-                ("Pengadaan", "Penawaran", "Optimasi"),
+                ("Pengadaan", "Penawaran", "Procurement Result"),
                 ("Produk", "Persetujuan"),
             ),
             (

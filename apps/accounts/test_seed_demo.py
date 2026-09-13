@@ -12,7 +12,7 @@ from django.test import TestCase
 
 from apps.audit.models import AuditEvent
 from apps.catalog.models import Product, Supplier
-from apps.sourcing.models import SupplierOffer
+from apps.sourcing.models import ProcurementResult, SupplierOffer
 from apps.tender.models import TenderRequest
 from apps.tender.services import get_current_tender_revision
 
@@ -42,7 +42,7 @@ class SeedDemoCommandTests(TestCase):
             call_command("seed_demo", stdout=output)
 
         self.assertEqual(User.objects.count(), 3)
-        self.assertEqual(AuditEvent.objects.count(), 11)
+        self.assertEqual(AuditEvent.objects.count(), 13)
         expected_users = (
             ("demo-admin", UserRole.ADMIN, True),
             ("demo-staff", UserRole.PROCUREMENT_STAFF, False),
@@ -61,6 +61,10 @@ class SeedDemoCommandTests(TestCase):
         self.assertEqual(Supplier.objects.count(), 3)
         self.assertEqual(SupplierOffer.objects.count(), 3)
         self.assertEqual(TenderRequest.objects.count(), 1)
+        self.assertEqual(ProcurementResult.objects.count(), 1)
+        result = ProcurementResult.objects.get()
+        self.assertEqual(result.status, "VALID")
+        self.assertEqual(result.total_purchase, Decimal("663000000.00"))
         tender = TenderRequest.objects.get(internal_code="DEMO-TENDER-001")
         revision = get_current_tender_revision(tender.pk)
         self.assertEqual(str(revision.total_hps), "800000000.00")
@@ -94,4 +98,5 @@ class SeedDemoCommandTests(TestCase):
         self.assertEqual(Supplier.objects.count(), 3)
         self.assertEqual(SupplierOffer.objects.count(), 3)
         self.assertEqual(TenderRequest.objects.count(), 1)
-        self.assertEqual(AuditEvent.objects.count(), 11)
+        self.assertEqual(ProcurementResult.objects.count(), 1)
+        self.assertEqual(AuditEvent.objects.count(), 13)

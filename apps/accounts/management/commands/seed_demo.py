@@ -14,8 +14,13 @@ from apps.accounts.choices import AccountAuditAction, UserRole
 from apps.audit.writer import write_audit_event
 from apps.catalog.models import Product, Supplier
 from apps.catalog.services import create_product, create_supplier
-from apps.sourcing.models import SupplierOffer
+from apps.sourcing.choices import ResultSourceType, ResultStatus
+from apps.sourcing.models import ProcurementResult, SupplierOffer
 from apps.sourcing.policies import calculate_net_purchase_price
+from apps.sourcing.result_services import (
+    create_manual_result,
+    validate_result,
+)
 from apps.sourcing.services import create_supplier_offer
 from apps.tender.models import TenderRequest
 from apps.tender.services import create_tender, get_current_tender_revision
@@ -91,15 +96,21 @@ class Command(BaseCommand):
             admin=admin,
             correlation_id=correlation_id,
         )
-        self._seed_offers(
+        offers = self._seed_offers(
             staff=staff,
             product=product,
             suppliers=suppliers,
             correlation_id=correlation_id,
         )
-        self._seed_tender(
+        revision = self._seed_tender(
             staff=staff,
             product=product,
+            correlation_id=correlation_id,
+        )
+        self._seed_manual_result(
+            staff=staff,
+            revision=revision,
+            offers=offers,
             correlation_id=correlation_id,
         )
 
@@ -139,6 +150,7 @@ class Command(BaseCommand):
             ("DEMO-OFFER-B", "SUP-B", "7500000", "5", "100"),
             ("DEMO-OFFER-C", "SUP-C", "7200000", "0", "100"),
         )
+        offers = {}
         for (
             reference,
             supplier_code,
@@ -178,6 +190,8 @@ class Command(BaseCommand):
                 valid_until=date(2030, 12, 31),
                 is_active=True,
             )
+            offers[supplier_code] = offer
+        return offers
 
     def _seed_tender(self, *, staff, product, correlation_id):
         tender = TenderRequest.objects.filter(
@@ -217,6 +231,49 @@ class Command(BaseCommand):
             product=product,
             requested_quantity=Decimal("100.000"),
             unit="unit",
+        )
+        return revision
+
+    def _seed_manual_result(
+        self, *, staff, revision, offers, correlation_id
+    ):
+        result = ProcurementResult.objects.filter(
+            tender_revision=revision,
+            source_type=ResultSourceType.MANUAL,
+            created_by=staff,
+        ).first()
+        if result is None:
+            tender_item = revision.items.get(line_number=1)
+            result = create_manual_result(
+                actor=staff,
+                tender_revision_id=revision.pk,
+                allocations=[
+                    {
+                        "tender_item_id": tender_item.pk,
+                        "line_number": 1,
+                        "supplier_offer_id": offers["SUP-A"].pk,
+                        "allocated_quantity": Decimal("60.000"),
+                    },
+                    {
+                        "tender_item_id": tender_item.pk,
+                        "line_number": 2,
+                        "supplier_offer_id": offers["SUP-B"].pk,
+                        "allocated_quantity": Decimal("40.000"),
+                    },
+                ],
+                correlation_id=correlation_id,
+            )
+            result = validate_result(
+                actor=staff,
+                result_id=result.pk,
+                expected_version=result.version,
+                correlation_id=correlation_id,
+            )
+        self._verify(
+            result,
+            status=ResultStatus.VALID,
+            total_purchase=Decimal("663000000.00"),
+            calculation_version="calc-v1",
         )
 
     @staticmethod

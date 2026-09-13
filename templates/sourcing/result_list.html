@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Procurement Result · Procurement ERP{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <span class="eyebrow">Sourcing</span>
+        <h1>Procurement Result</h1>
+        <p>Alternatif pemenuhan tender dari jalur manual, optimizer, atau customization.</p>
+    </div>
+    <a class="button button-primary" href="{% url 'sourcing:result-create' %}">Buat result manual</a>
+</div>
+<section class="card table-card">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead><tr><th>Tender</th><th>Sumber</th><th>Status</th><th>Total purchase</th><th>Pilihan</th><th>Aksi</th></tr></thead>
+            <tbody>
+                {% for row in rows %}{% with result=row.result %}
+                    <tr>
+                        <td>{{ result.tender_revision.tender_request.internal_code }} · R{{ result.tender_revision.revision_number }}</td>
+                        <td>{{ result.get_source_type_display }}</td>
+                        <td><span class="status-badge">{{ result.get_status_display }}</span></td>
+                        <td>{% if result.total_purchase %}Rp{{ result.total_purchase|floatformat:"2g" }}{% else %}Belum dihitung{% endif %}</td>
+                        <td>{% if row.selected %}<span class="status-badge">Terpilih</span>{% else %}—{% endif %}</td>
+                        <td><a href="{% url 'sourcing:result-detail' result.pk %}">Buka</a></td>
+                    </tr>
+                {% endwith %}{% empty %}
+                    <tr><td colspan="6" class="empty-cell">Belum ada Procurement Result.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

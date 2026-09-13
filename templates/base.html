@@ -27,6 +27,7 @@
                     {% elif user.role == "PROCUREMENT_STAFF" %}
                         <a href="{% url 'sourcing:offer-list' %}">Offer</a>
                         <a href="{% url 'tender:list' %}">Tender</a>
+                        <a href="{% url 'sourcing:result-list' %}">Result</a>
                     {% endif %}
                     <a href="{% url 'accounts:profile' %}">Profil</a>
                     <form method="post"
