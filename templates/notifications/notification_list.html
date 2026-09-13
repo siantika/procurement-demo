@@ -23,6 +23,7 @@
                         <td>
                             <div class="inline-actions">
                                 {% if notification.source_entity_type == "OptimizationRun" %}<a href="{% url 'optimization:run-detail' notification.source_entity_id %}">Buka</a>{% endif %}
+                                {% if notification.source_entity_type == "BidProposalRevision" %}<a href="{% url 'bids:revision-detail' notification.source_entity_id %}">Buka</a>{% endif %}
                                 {% if not notification.is_read %}
                                     <form method="post" action="{% url 'notifications:mark-read' notification.pk %}">
                                         {% csrf_token %}

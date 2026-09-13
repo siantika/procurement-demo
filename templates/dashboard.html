@@ -51,12 +51,19 @@
             <h2>Optimization</h2>
             <p>Jalankan optimizer dan tinjau rekomendasi terurut.</p>
         </a>
+        <a class="card module-card module-link"
+           href="{% url 'bids:list' %}">
+            <span class="module-icon" aria-hidden="true">BD</span>
+            <h2>Bid Proposal</h2>
+            <p>Hitung pricing, cek HPS, dan kirim proposal untuk approval.</p>
+        </a>
     {% elif user.role == "MANAGER" %}
-        <article class="card module-card">
+        <a class="card module-card module-link"
+           href="{% url 'approval:queue' %}">
             <span class="module-icon" aria-hidden="true">AP</span>
             <h2>Persetujuan</h2>
             <p>Tinjau, setujui, atau tolak proposal pengadaan.</p>
-        </article>
+        </a>
     {% endif %}
 </section>
 {% endblock %}

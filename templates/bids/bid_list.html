@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Bid Proposal · Procurement ERP{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <span class="eyebrow">Penawaran komersial</span>
+        <h1>Bid Proposal</h1>
+        <p>Pricing dan riwayat approval berdasarkan result terpilih.</p>
+    </div>
+</div>
+<section class="card table-card">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead><tr><th>Nomor</th><th>Tender</th><th>Revision</th><th>Status</th><th>Nilai bid</th><th>Aksi</th></tr></thead>
+            <tbody>
+                {% for row in rows %}
+                    <tr>
+                        <td>{{ row.proposal.proposal_number }}</td>
+                        <td>{{ row.proposal.tender_request.internal_code }}</td>
+                        <td>R{{ row.revision.revision_number }}</td>
+                        <td><span class="status-badge">{{ row.revision.get_status_display }}</span></td>
+                        <td>{% if row.revision.total_bid_value %}Rp{{ row.revision.total_bid_value|floatformat:"2g" }}{% else %}Belum dihitung{% endif %}</td>
+                        <td><a href="{% url 'bids:detail' row.proposal.pk %}">Buka</a></td>
+                    </tr>
+                {% empty %}
+                    <tr><td class="empty-cell" colspan="6">Belum ada Bid Proposal. Pilih Procurement Result untuk membuatnya.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

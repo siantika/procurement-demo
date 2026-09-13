@@ -8,6 +8,8 @@ from .views import dashboard_view
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("apps.accounts.urls")),
+    path("approval/", include("apps.approval.urls")),
+    path("bids/", include("apps.bids.urls")),
     path("catalog/", include("apps.catalog.urls")),
     path("notifications/", include("apps.notifications.urls")),
     path("optimization/", include("apps.optimization.urls")),

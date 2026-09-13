@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Tolak Bid · Procurement ERP{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <span class="eyebrow">{{ revision.bid_proposal.proposal_number }}</span>
+        <h1>Tolak Bid Proposal</h1>
+        <p>Alasan akan disimpan dalam histori dan dikirim kepada submitter.</p>
+    </div>
+</div>
+<section class="card form-card">
+    <form method="post" action="{% url 'approval:reject' revision.pk %}" class="stack-form" novalidate>
+        {% csrf_token %}
+        {% include "components/form_fields.html" %}
+        <div class="form-actions">
+            <button class="button button-primary" type="submit">Konfirmasi penolakan</button>
+            <a class="button button-secondary" href="{% url 'bids:detail' revision.bid_proposal.pk %}">Batal</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

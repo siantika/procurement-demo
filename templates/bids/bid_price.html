@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Pricing {{ proposal.proposal_number }} · Procurement ERP{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <span class="eyebrow">{{ proposal.proposal_number }}</span>
+        <h1>Tetapkan target margin</h1>
+        <p>Total purchase Rp{{ revision.total_purchase|floatformat:"2g" }}. Sistem akan menghitung nilai bid dan kelayakan HPS.</p>
+    </div>
+</div>
+<section class="card form-card">
+    <form method="post" class="stack-form" novalidate>
+        {% csrf_token %}
+        {% include "components/form_fields.html" %}
+        <div class="form-actions">
+            <button class="button button-primary" type="submit">Hitung dan simpan</button>
+            <a class="button button-secondary" href="{% url 'bids:detail' proposal.pk %}">Batal</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

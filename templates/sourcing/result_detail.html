@@ -27,6 +27,11 @@
                     {% csrf_token %}
                     <button class="button button-primary" type="submit">Pilih result</button>
                 </form>
+            {% else %}
+                <form method="post" action="{% url 'bids:create' result.tender_revision.tender_request.pk %}">
+                    {% csrf_token %}
+                    <button class="button button-primary" type="submit">Buat Bid Proposal</button>
+                </form>
             {% endif %}
         {% endif %}
     </div>

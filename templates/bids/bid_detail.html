@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}{{ proposal.proposal_number }} · Procurement ERP{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <span class="eyebrow">{{ proposal.tender_request.internal_code }} · Bid R{{ revision.revision_number }}</span>
+        <h1>{{ proposal.proposal_number }}</h1>
+        <p>{{ revision.tender_revision.institution_name }} · {{ revision.tender_revision.title }}</p>
+    </div>
+    <div class="form-actions">
+        {% if is_current and user.role == "PROCUREMENT_STAFF" %}
+            {% if revision.status == "DRAFT" %}
+                <a class="button button-secondary" href="{% url 'bids:price' proposal.pk %}">{% if revision.is_priced %}Ubah margin{% else %}Tetapkan margin{% endif %}</a>
+                {% if revision.is_priced %}
+                    <form method="post" action="{% url 'bids:submit' proposal.pk %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="expected_version" value="{{ revision.version }}">
+                        <button class="button button-primary" type="submit">Kirim untuk approval</button>
+                    </form>
+                {% endif %}
+            {% elif revision.status == "REJECTED" %}
+                <form method="post" action="{% url 'bids:revise' proposal.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="expected_version" value="{{ proposal.version }}">
+                    <button class="button button-primary" type="submit">Buat revision baru</button>
+                </form>
+            {% endif %}
+        {% elif is_current and user.role == "MANAGER" and revision.status == "WAITING_APPROVAL" %}
+            <form method="post" action="{% url 'approval:approve' revision.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="expected_version" value="{{ revision.version }}">
+                <button class="button button-primary" type="submit">Setujui Bid</button>
+            </form>
+            <a class="button button-secondary" href="{% url 'approval:reject-form' revision.pk %}">Tolak Bid</a>
+        {% endif %}
+    </div>
+</div>
+
+{% if revision.status == "REJECTED" and revision.approval_decision %}
+    <div class="alert" role="alert">
+        <p><strong>Bid ditolak.</strong> {{ revision.approval_decision.reason }}</p>
+    </div>
+{% endif %}
+
+<section class="card detail-card">
+    <dl class="detail-grid">
+        <div><dt>Status</dt><dd><span class="status-badge">{{ revision.get_status_display }}</span></dd></div>
+        <div><dt>Procurement Result</dt><dd><a href="{% url 'sourcing:result-detail' revision.selected_result.pk %}">{{ revision.selected_result.pk }}</a></dd></div>
+        <div><dt>Total purchase</dt><dd>Rp{{ revision.total_purchase|floatformat:"2g" }}</dd></div>
+        <div><dt>Target margin</dt><dd>{% if revision.target_margin_percent is not None %}{{ revision.target_margin_percent }}%{% else %}Belum ditetapkan{% endif %}</dd></div>
+        <div><dt>Total bid</dt><dd>{% if revision.total_bid_value %}Rp{{ revision.total_bid_value|floatformat:"2g" }}{% else %}Belum dihitung{% endif %}</dd></div>
+        <div><dt>Gross profit</dt><dd>{% if revision.gross_profit is not None %}Rp{{ revision.gross_profit|floatformat:"2g" }}{% else %}Belum dihitung{% endif %}</dd></div>
+        <div><dt>Actual margin</dt><dd>{% if revision.actual_margin_percent is not None %}{{ revision.actual_margin_percent }}%{% else %}Belum dihitung{% endif %}</dd></div>
+        <div><dt>Kelayakan HPS</dt><dd>{% if revision.is_hps_feasible is None %}HPS tidak tersedia{% elif revision.is_hps_feasible %}Memenuhi HPS{% else %}Melebihi HPS{% endif %}</dd></div>
+        {% if revision.max_margin_percent is not None %}<div><dt>Margin maksimum</dt><dd>{{ revision.max_margin_percent }}%</dd></div>{% endif %}
+        {% if revision.submission_hash %}<div><dt>Submission hash</dt><dd class="hash-value">{{ revision.submission_hash }}</dd></div>{% endif %}
+        {% if revision.approval_decision %}<div><dt>Keputusan Manager</dt><dd>{{ revision.approval_decision.get_decision_display }} · {{ revision.approval_decision.decided_by.full_name }}</dd></div>{% endif %}
+    </dl>
+</section>
+
+<section class="card table-card content-section">
+    <div class="section-heading padded-heading"><h2>Rincian pricing</h2><p>Harga final dihitung menggunakan {{ revision.calculation_version }}.</p></div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead><tr><th>Item</th><th>Jumlah</th><th>Purchase</th><th>Harga bid/unit</th><th>Total bid</th></tr></thead>
+            <tbody>
+                {% for item in revision.items.all %}
+                    <tr>
+                        <td>{{ item.product_snapshot.code }} — {{ item.product_snapshot.name }}</td>
+                        <td>{{ item.requested_quantity }} {{ item.unit }}</td>
+                        <td>Rp{{ item.item_purchase_total|floatformat:"2g" }}</td>
+                        <td>Rp{{ item.bid_unit_price|floatformat:"4g" }}</td>
+                        <td>Rp{{ item.item_bid_total|floatformat:"2g" }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td class="empty-cell" colspan="5">Tetapkan target margin untuk menghitung pricing.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="card table-card content-section">
+    <div class="section-heading padded-heading"><h2>Riwayat revision</h2><p>Submission dan keputusan lama tetap dipertahankan.</p></div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead><tr><th>Revision</th><th>Status</th><th>Nilai bid</th><th>Dibuat</th></tr></thead>
+            <tbody>{% for history in revisions %}<tr><td><a href="{% url 'bids:revision-detail' history.pk %}">R{{ history.revision_number }}</a></td><td>{{ history.get_status_display }}</td><td>{% if history.total_bid_value %}Rp{{ history.total_bid_value|floatformat:"2g" }}{% else %}—{% endif %}</td><td>{{ history.created_at|date:"d M Y H:i" }}</td></tr>{% endfor %}</tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

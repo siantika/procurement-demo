@@ -28,6 +28,9 @@
                         <a href="{% url 'sourcing:offer-list' %}">Offer</a>
                         <a href="{% url 'tender:list' %}">Tender</a>
                         <a href="{% url 'sourcing:result-list' %}">Result</a>
+                        <a href="{% url 'bids:list' %}">Bid</a>
+                    {% elif user.role == "MANAGER" %}
+                        <a href="{% url 'approval:queue' %}">Approval</a>
                     {% endif %}
                     <a href="{% url 'notifications:list' %}">Notifikasi</a>
                     <a href="{% url 'accounts:profile' %}">Profil</a>
@@ -69,6 +72,8 @@
                         <p>{{ notification.message }}</p>
                         {% if notification.source_entity_type == "OptimizationRun" %}
                             <a href="{% url 'optimization:run-detail' notification.source_entity_id %}">Lihat optimization</a>
+                        {% elif notification.source_entity_type == "BidProposalRevision" %}
+                            <a href="{% url 'bids:revision-detail' notification.source_entity_id %}">Lihat Bid</a>
                         {% else %}
                             <a href="{% url 'notifications:list' %}">Lihat notifikasi</a>
                         {% endif %}
