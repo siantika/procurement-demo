@@ -14,6 +14,7 @@ from .services import (
     create_product,
     create_supplier,
     deactivate_product,
+    reactivate_product,
     update_product,
 )
 
@@ -199,6 +200,40 @@ class CatalogServiceTests(TestCase):
         self.assertEqual(result.version, 2)
         self.assertTrue(Product.objects.filter(pk=product.pk).exists())
 
+    def test_admin_reactivates_product_with_audit(self):
+        product = self._product()
+        product = deactivate_product(
+            actor=self.admin,
+            product_id=product.pk,
+            expected_version=product.version,
+            correlation_id=self.correlation_id(),
+        )
+
+        reactivated = reactivate_product(
+            actor=self.admin,
+            product_id=product.pk,
+            expected_version=product.version,
+            correlation_id=self.correlation_id(),
+        )
+
+        self.assertTrue(reactivated.is_active)
+        self.assertEqual(reactivated.version, 3)
+        event = AuditEvent.objects.get(action="PRODUCT_REACTIVATED")
+        self.assertEqual(event.actor, self.admin)
+
+    def test_staff_cannot_reactivate_product(self):
+        product = self._product()
+        product.is_active = False
+        product.save(update_fields=["is_active"])
+
+        with self.assertRaises(PermissionDenied):
+            reactivate_product(
+                actor=self.staff,
+                product_id=product.pk,
+                expected_version=product.version,
+                correlation_id=self.correlation_id(),
+            )
+
     def _product(self):
         return create_product(
             actor=self.admin,
@@ -310,6 +345,51 @@ class CatalogViewTests(TestCase):
         self.assertEqual(response.status_code, 409)
         product.refresh_from_db()
         self.assertTrue(product.is_active)
+
+    def test_admin_can_reactivate_product_through_ui(self):
+        product = Product.objects.create(
+            code="REACTIVE-P",
+            name="Reactivate Product",
+            default_unit="unit",
+            is_active=False,
+            created_by=self.admin,
+        )
+        self.client.force_login(self.admin)
+
+        list_response = self.client.get(reverse("catalog:product-list"))
+        response = self.client.post(
+            reverse("catalog:product-reactivate", args=[product.pk]),
+            {"expected_version": product.version},
+        )
+
+        self.assertContains(list_response, "Aktifkan kembali")
+        self.assertRedirects(response, reverse("catalog:product-list"))
+        product.refresh_from_db()
+        self.assertTrue(product.is_active)
+        self.assertEqual(product.version, 2)
+
+        self.client.force_login(self.staff)
+        tender_response = self.client.get(reverse("tender:create"))
+        self.assertContains(tender_response, "Reactivate Product")
+
+    def test_reactivate_rejects_missing_and_stale_version(self):
+        product = Product.objects.create(
+            code="REACTIVE-STALE",
+            name="Reactivate Stale",
+            default_unit="unit",
+            is_active=False,
+            created_by=self.admin,
+        )
+        self.client.force_login(self.admin)
+        url = reverse("catalog:product-reactivate", args=[product.pk])
+
+        self.assertEqual(self.client.post(url).status_code, 400)
+        Product.objects.filter(pk=product.pk).update(version=2)
+        response = self.client.post(url, {"expected_version": 1})
+
+        self.assertEqual(response.status_code, 409)
+        product.refresh_from_db()
+        self.assertFalse(product.is_active)
 
     def test_update_returns_conflict_for_stale_form(self):
         product = Product.objects.create(

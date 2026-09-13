@@ -9,8 +9,17 @@
         <h1>{{ product.name }}</h1>
         <p>Master data produk dan satuan canonical.</p>
     </div>
-    <a class="button button-primary"
-       href="{% url 'catalog:product-update' product.pk %}">Ubah produk</a>
+    <div class="form-actions">
+        {% if not product.is_active %}
+            <form method="post" action="{% url 'catalog:product-reactivate' product.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="expected_version" value="{{ product.version }}">
+                <button class="button button-secondary" type="submit">Aktifkan kembali</button>
+            </form>
+        {% endif %}
+        <a class="button button-primary"
+           href="{% url 'catalog:product-update' product.pk %}">Ubah produk</a>
+    </div>
 </div>
 <section class="card detail-card">
     <dl class="detail-grid">

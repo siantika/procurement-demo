@@ -192,6 +192,32 @@ def deactivate_product(
     )
 
 
+def reactivate_product(
+    *, actor, product_id, expected_version, correlation_id
+):
+    require_admin(actor)
+    with transaction.atomic():
+        product = Product.objects.select_for_update().get(pk=product_id)
+        if product.version != expected_version:
+            raise ConcurrencyConflict(
+                "Data telah berubah. Muat ulang halaman sebelum menyimpan."
+            )
+        if product.is_active:
+            return product
+        product.is_active = True
+        product.version += 1
+        product.save(
+            update_fields=["is_active", "version", "updated_at"]
+        )
+        _write_event(
+            actor=actor,
+            entity=product,
+            action=CatalogAuditAction.PRODUCT_REACTIVATED,
+            correlation_id=correlation_id,
+        )
+        return product
+
+
 def deactivate_supplier(
     *, actor, supplier_id, expected_version, correlation_id
 ):

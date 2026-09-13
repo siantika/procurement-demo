@@ -15,6 +15,7 @@ from .services import (
     create_supplier,
     deactivate_product,
     deactivate_supplier,
+    reactivate_product,
     update_product,
     update_supplier,
 )
@@ -129,6 +130,27 @@ def product_deactivate(request, product_id):
         return HttpResponse("Versi data tidak valid.", status=400)
     try:
         deactivate_product(
+            actor=request.user,
+            product_id=product_id,
+            expected_version=form.cleaned_data["expected_version"],
+            correlation_id=_correlation_id(request),
+        )
+    except Product.DoesNotExist:
+        return HttpResponse("Produk tidak ditemukan.", status=404)
+    except ValidationError as error:
+        return HttpResponse(error.messages[0], status=409)
+    return redirect("catalog:product-list")
+
+
+@login_required
+@require_POST
+def product_reactivate(request, product_id):
+    require_admin(request.user)
+    form = ExpectedVersionForm(request.POST)
+    if not form.is_valid():
+        return HttpResponse("Versi data tidak valid.", status=400)
+    try:
+        reactivate_product(
             actor=request.user,
             product_id=product_id,
             expected_version=form.cleaned_data["expected_version"],

@@ -22,6 +22,11 @@ urlpatterns = [
         views.product_deactivate,
         name="product-deactivate",
     ),
+    path(
+        "products/<uuid:product_id>/reactivate/",
+        views.product_reactivate,
+        name="product-reactivate",
+    ),
     path("suppliers/", views.supplier_list, name="supplier-list"),
     path("suppliers/new/", views.supplier_create, name="supplier-create"),
     path(

@@ -23,7 +23,11 @@
                         <td><span class="status-badge">{% if product.is_active %}Aktif{% else %}Nonaktif{% endif %}</span></td>
                         <td><div class="inline-actions">
                             <a href="{% url 'catalog:product-update' product.pk %}">Ubah</a>
-                            {% if product.is_active %}<form method="post" action="{% url 'catalog:product-deactivate' product.pk %}">{% csrf_token %}<input type="hidden" name="expected_version" value="{{ product.version }}"><button class="text-button danger-text" type="submit">Nonaktifkan</button></form>{% endif %}
+                            {% if product.is_active %}
+                                <form method="post" action="{% url 'catalog:product-deactivate' product.pk %}">{% csrf_token %}<input type="hidden" name="expected_version" value="{{ product.version }}"><button class="text-button danger-text" type="submit">Nonaktifkan</button></form>
+                            {% else %}
+                                <form method="post" action="{% url 'catalog:product-reactivate' product.pk %}">{% csrf_token %}<input type="hidden" name="expected_version" value="{{ product.version }}"><button class="text-button" type="submit">Aktifkan kembali</button></form>
+                            {% endif %}
                         </div></td>
                     </tr>
                 {% empty %}<tr><td colspan="5" class="empty-cell">Belum ada produk.</td></tr>{% endfor %}
