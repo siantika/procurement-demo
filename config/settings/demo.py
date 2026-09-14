@@ -11,7 +11,23 @@ from config.env import (
 
 from .base import *  # noqa: F403
 
+MIDDLEWARE.insert(  # noqa: F405
+    1, "whitenoise.middleware.WhiteNoiseMiddleware"
+)
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": (
+            "whitenoise.storage."
+            "CompressedManifestStaticFilesStorage"
+        ),
+    },
+}
+
 SECRET_KEY = env_required("DJANGO_SECRET_KEY")
+APP_ENV = env("APP_ENV", default="demo")
 DEBUG = False
 ALLOWED_HOSTS = env_csv("DJANGO_ALLOWED_HOSTS", required=True)
 CSRF_TRUSTED_ORIGINS = env_csv(
@@ -45,10 +61,12 @@ APP_BASE_URL = env_required("APP_BASE_URL")
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True
 SECURE_SSL_REDIRECT = env_bool("DJANGO_SECURE_SSL_REDIRECT", default=True)
-SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = env_bool(
+    "DJANGO_SESSION_COOKIE_SECURE", default=True
+)
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
-CSRF_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = env_bool("DJANGO_CSRF_COOKIE_SECURE", default=True)
 CSRF_COOKIE_HTTPONLY = True
 CSRF_COOKIE_SAMESITE = "Lax"
 SECURE_HSTS_SECONDS = env_int("DJANGO_SECURE_HSTS_SECONDS", default=3600)

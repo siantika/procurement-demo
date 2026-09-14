@@ -85,7 +85,15 @@ def execute_generation_job(self, job_id, correlation_id=None):
     except Exception:
         logger.exception(
             "Document generation failed",
-            extra={"generation_job_id": str(job.pk)},
+            extra={
+                "correlation_id": correlation_id,
+                "operation": "execute_generation_job",
+                "entity_type": "DocumentGenerationJob",
+                "entity_id": str(job.pk),
+                "outcome": "error",
+                "safe_error_code": "DOCUMENT_TECHNICAL_ERROR",
+                "diagnostic_reference": diagnostic_reference,
+            },
         )
         error_code = "DOCUMENT_TECHNICAL_ERROR"
         safe_message = (
@@ -155,7 +163,13 @@ def reconcile_pending_jobs():
         except Exception:
             logger.exception(
                 "Stale document job recovery will republish",
-                extra={"generation_job_id": str(job.pk)},
+                extra={
+                    "correlation_id": str(job.pk),
+                    "operation": "reconcile_generation_job",
+                    "entity_type": "DocumentGenerationJob",
+                    "entity_id": str(job.pk),
+                    "outcome": "republish",
+                },
             )
             released = release_generation_job_for_retry(job_id=job.pk)
             if released is not None:

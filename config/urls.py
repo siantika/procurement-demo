@@ -3,9 +3,17 @@
 from django.contrib import admin
 from django.urls import include, path
 
-from .views import dashboard_view
+from .views import (
+    dashboard_view,
+    health_live,
+    health_ready,
+    metrics_view,
+)
 
 urlpatterns = [
+    path("health/live/", health_live, name="health-live"),
+    path("health/ready/", health_ready, name="health-ready"),
+    path("metrics/", metrics_view, name="metrics"),
     path("admin/", admin.site.urls),
     path("accounts/", include("apps.accounts.urls")),
     path("approval/", include("apps.approval.urls")),

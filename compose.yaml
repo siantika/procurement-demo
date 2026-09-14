@@ -1,0 +1,151 @@
+name: procurement-demo
+
+x-app: &app
+  build:
+    context: .
+  image: procurement-demo:local
+  env_file:
+    - ${DEMO_ENV_FILE:-.env.demo}
+  restart: unless-stopped
+
+services:
+  postgres:
+    image: postgres:16.10-bookworm
+    env_file:
+      - ${DEMO_ENV_FILE:-.env.demo}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U procurement -d procurement"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.4.5-alpine
+    command: ["redis-server", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+    env_file:
+      - ${DEMO_ENV_FILE:-.env.demo}
+    command: ["server", "/data", "--console-address", ":9001"]
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  minio-init:
+    image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
+    env_file:
+      - ${DEMO_ENV_FILE:-.env.demo}
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        mc alias set local http://minio:9000
+        "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}" &&
+        mc mb --ignore-existing "local/$${MINIO_BUCKET}"
+    restart: "no"
+
+  web:
+    <<: *app
+    command:
+      - /bin/sh
+      - -c
+      - >-
+        python manage.py migrate --noinput &&
+        python manage.py collectstatic --noinput &&
+        gunicorn config.wsgi:application --bind 0.0.0.0:8000
+        --workers 2 --timeout 60
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/ready/"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  worker-optimization:
+    <<: *app
+    command:
+      - celery
+      - -A
+      - config
+      - worker
+      - -l
+      - info
+      - -Q
+      - optimization
+      - --concurrency=2
+      - --hostname=worker-optimization@%h
+    depends_on:
+      web:
+        condition: service_healthy
+
+  worker-documents:
+    <<: *app
+    command:
+      - celery
+      - -A
+      - config
+      - worker
+      - -l
+      - info
+      - -Q
+      - documents
+      - --concurrency=1
+      - --hostname=worker-documents@%h
+    depends_on:
+      web:
+        condition: service_healthy
+
+  scheduler:
+    <<: *app
+    command:
+      - celery
+      - -A
+      - config
+      - beat
+      - -l
+      - info
+      - --schedule=/tmp/celerybeat-schedule
+    depends_on:
+      web:
+        condition: service_healthy
+
+  minio-client:
+    image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
+    profiles: ["tools"]
+    env_file:
+      - ${DEMO_ENV_FILE:-.env.demo}
+    volumes:
+      - ./backups:/backups
+    entrypoint: ["/bin/sh", "-c"]
+
+volumes:
+  postgres-data:
+  minio-data:

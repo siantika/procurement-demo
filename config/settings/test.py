@@ -5,6 +5,7 @@ from config.env import database_from_url, env
 from .base import *  # noqa: F403
 
 SECRET_KEY = "django-insecure-automated-tests-only"
+APP_ENV = "test"
 
 DATABASES = {
     "default": database_from_url(

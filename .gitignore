@@ -14,3 +14,5 @@ celerybeat-schedule*
 
 # Local process manager state and logs
 .run/
+backups/
+.env.demo

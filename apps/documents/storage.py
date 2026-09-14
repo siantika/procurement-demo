@@ -99,3 +99,17 @@ def read_private_object(object_key):
     finally:
         response.close()
         response.release_conn()
+
+
+def remove_private_object(object_key):
+    try:
+        _client().remove_object(settings.MINIO_BUCKET, object_key)
+    except S3Error as error:
+        if error.code not in {"NoSuchKey", "NoSuchObject"}:
+            raise PrivateStorageError(
+                "Private object storage tidak dapat diakses."
+            ) from error
+    except (MinioException, HTTPError, OSError) as error:
+        raise PrivateStorageError(
+            "Private object storage tidak dapat diakses."
+        ) from error

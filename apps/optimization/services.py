@@ -93,7 +93,14 @@ def _publish_safely(run_id, correlation_id):
     except Exception:
         logger.exception(
             "Optimization task publish failed; reconciliation will retry",
-            extra={"optimization_run_id": str(run_id)},
+            extra={
+                "correlation_id": str(correlation_id),
+                "operation": "publish_optimization_run",
+                "entity_type": "OptimizationRun",
+                "entity_id": str(run_id),
+                "outcome": "pending_reconciliation",
+                "safe_error_code": "OPTIMIZATION_PUBLISH_FAILED",
+            },
         )
 
 

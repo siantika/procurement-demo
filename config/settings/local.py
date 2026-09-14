@@ -8,6 +8,7 @@ SECRET_KEY = env(
     "DJANGO_SECRET_KEY",
     default="django-insecure-local-development-only",
 )
+APP_ENV = env("APP_ENV", default="local")
 DEBUG = env_bool("DJANGO_DEBUG", default=True)
 ALLOWED_HOSTS = env_csv(
     "DJANGO_ALLOWED_HOSTS",

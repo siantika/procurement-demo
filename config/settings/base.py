@@ -30,6 +30,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "config.middleware.CorrelationIdMiddleware",
+    "config.middleware.RequestObservabilityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -37,6 +38,8 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+APP_ENV = "base"
 
 ROOT_URLCONF = "config.urls"
 
@@ -141,6 +144,29 @@ DOCUMENT_SOFT_TIME_LIMIT_SECONDS = 50
 DOCUMENT_HARD_TIME_LIMIT_SECONDS = 60
 DOCUMENT_RECONCILIATION_GRACE_SECONDS = 60
 DOCUMENT_MAX_PDF_BYTES = 10 * 1024 * 1024
+DEMO_SMOKE_TIMEOUT_SECONDS = 90
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "json": {"()": "config.logging.JsonLogFormatter"},
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "json",
+        },
+    },
+    "root": {"handlers": ["console"], "level": "INFO"},
+    "loggers": {
+        "django.server": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+}
 
 
 # Gunakan custom user model milik aplikasi accounts.

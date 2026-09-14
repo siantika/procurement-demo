@@ -1,0 +1,10 @@
+.git
+.env
+.env.demo
+.run
+.venv
+backups
+__pycache__
+*.pyc
+celerybeat-schedule*
+staticfiles

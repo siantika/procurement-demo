@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Akses ditolak · Procurement ERP{% endblock %}
+
+{% block content %}
+<section class="card form-card">
+    <span class="eyebrow">403</span>
+    <h1>Akses ditolak</h1>
+    <p class="muted">Anda tidak memiliki akses untuk tindakan atau halaman ini.</p>
+    <a class="button button-primary" href="{% url 'dashboard' %}">Kembali ke dashboard</a>
+</section>
+{% endblock %}

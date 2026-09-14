@@ -49,7 +49,14 @@ def _publish_safely(job_id, correlation_id):
     except Exception:
         logger.exception(
             "Document task publish failed; reconciliation will retry",
-            extra={"generation_job_id": str(job_id)},
+            extra={
+                "correlation_id": str(correlation_id),
+                "operation": "publish_generation_job",
+                "entity_type": "DocumentGenerationJob",
+                "entity_id": str(job_id),
+                "outcome": "pending_reconciliation",
+                "safe_error_code": "DOCUMENT_PUBLISH_FAILED",
+            },
         )
 
 

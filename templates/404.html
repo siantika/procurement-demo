@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Halaman tidak ditemukan · Procurement ERP{% endblock %}
+
+{% block content %}
+<section class="card form-card">
+    <span class="eyebrow">404</span>
+    <h1>Halaman tidak ditemukan</h1>
+    <p class="muted">Alamat yang dibuka tidak tersedia atau sudah berubah.</p>
+    <a class="button button-primary" href="{% url 'dashboard' %}">Kembali ke dashboard</a>
+</section>
+{% endblock %}

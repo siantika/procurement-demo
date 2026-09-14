@@ -65,7 +65,15 @@ def execute_optimization_run(self, run_id, correlation_id=None):
     except Exception:
         logger.exception(
             "Optimization run failed",
-            extra={"optimization_run_id": str(run.pk)},
+            extra={
+                "correlation_id": correlation_id,
+                "operation": "execute_optimization_run",
+                "entity_type": "OptimizationRun",
+                "entity_id": str(run.pk),
+                "outcome": "error",
+                "safe_error_code": "OPTIMIZATION_TECHNICAL_ERROR",
+                "diagnostic_reference": diagnostic_reference,
+            },
         )
         fail_optimization_run(
             run_id=run.pk,
