@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <title>{{ document.document.document_number }}</title>
+</head>
+<body>
+    <header>
+        <p class="document-label">PROPOSAL PENAWARAN</p>
+        <h1>{{ document.document.document_number }}</h1>
+        <p>{{ document.source.proposal_number }} · Revision {{ document.source.bid_revision_number }} · Document version {{ document.document.document_version }}</p>
+    </header>
+    <section>
+        <h2>Tujuan Penawaran</h2>
+        <dl>
+            <dt>Instansi</dt><dd>{{ document.tender.institution_name }}</dd>
+            <dt>Alamat</dt><dd>{{ document.tender.institution_address|default:"—" }}</dd>
+            <dt>Tender</dt><dd>{{ document.tender.tender_reference_number|default:document.tender.internal_code }} — {{ document.tender.title }}</dd>
+            <dt>Berlaku sampai</dt><dd>{{ document.document.valid_until }}</dd>
+        </dl>
+    </section>
+    <section>
+        <h2>Rincian Penawaran</h2>
+        <table>
+            <thead><tr><th>No.</th><th>Produk</th><th>Jumlah</th><th>Harga/unit</th><th>Total</th></tr></thead>
+            <tbody>
+                {% for item in document.pricing.items %}
+                    <tr>
+                        <td>{{ item.line_number }}</td>
+                        <td>{{ item.product.code }} — {{ item.product.name }}</td>
+                        <td>{{ item.requested_quantity }} {{ item.unit }}</td>
+                        <td>Rp{{ item.bid_unit_price }}</td>
+                        <td>Rp{{ item.item_bid_total }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot><tr><th colspan="4">Total Bid</th><th>Rp{{ document.pricing.total_bid_value }}</th></tr></tfoot>
+        </table>
+    </section>
+    <section class="decision-grid">
+        <div>
+            <h2>Approval</h2>
+            <p>Disetujui oleh {{ document.approval.manager_name }}</p>
+            <p>{{ document.approval.decided_at }}</p>
+        </div>
+        <div>
+            <h2>Signature</h2>
+            {% if signature_image_data_uri %}
+                <img class="signature-image"
+                     src="{{ signature_image_data_uri }}"
+                     alt="Tanda tangan {{ document.signature.signer_name }}">
+            {% endif %}
+            <p>Ditandatangani oleh {{ document.signature.signer_name }}</p>
+            <p>{{ document.signature.signed_at }}</p>
+        </div>
+    </section>
+    <footer>
+        <p>Dokumen ini dibuat secara elektronik. Submission hash: {{ document.source.submission_hash }}</p>
+    </footer>
+</body>
+</html>

@@ -44,6 +44,8 @@ def _proposal_queryset():
         "revisions__selected_result",
         "revisions__items",
         "revisions__approval_decision__decided_by",
+        "revisions__signature__signed_by",
+        "revisions__generation_jobs__final_document",
     )
 
 
@@ -91,7 +93,10 @@ def bid_revision_detail(request, revision_id):
             "selected_result",
             "submitted_by",
             "approval_decision__decided_by",
-        ).prefetch_related("items"),
+            "signature__signed_by",
+        ).prefetch_related(
+            "items", "generation_jobs__final_document"
+        ),
         pk=revision_id,
     )
     proposal = revision.bid_proposal

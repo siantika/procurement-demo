@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Tanda tangani {{ revision.bid_proposal.proposal_number }} · Procurement ERP{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <span class="eyebrow">Signature · Bid R{{ revision.revision_number }}</span>
+        <h1>Tanda tangani Bid</h1>
+        <p>{{ revision.bid_proposal.proposal_number }} · Nilai Rp{{ revision.total_bid_value|floatformat:"2g" }}</p>
+    </div>
+</div>
+
+<section class="card form-card">
+    <div class="section-heading">
+        <h2>Konfirmasi keputusan</h2>
+        <p>Signature bersifat final dan hanya dapat dibuat oleh Manager yang menyetujui proposal.</p>
+    </div>
+    <form method="post" enctype="multipart/form-data" class="stack-form" novalidate>
+        {% csrf_token %}
+        {{ form.expected_version }}
+        {% if form.non_field_errors %}<div class="alert" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+        <div class="field-group">
+            {{ form.confirmation.label_tag }}
+            {{ form.confirmation }}
+            {% for error in form.confirmation.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+        </div>
+        <div class="field-group">
+            {{ form.signature_image.label_tag }}
+            {{ form.signature_image }}
+            <p class="field-help">{{ form.signature_image.help_text }}</p>
+            {% for error in form.signature_image.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+        </div>
+        <div class="form-actions">
+            <button class="button button-primary" type="submit">Tandatangani Bid</button>
+            <a class="button button-secondary" href="{% url 'bids:revision-detail' revision.pk %}">Kembali</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

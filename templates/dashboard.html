@@ -55,14 +55,14 @@
            href="{% url 'bids:list' %}">
             <span class="module-icon" aria-hidden="true">BD</span>
             <h2>Bid Proposal</h2>
-            <p>Hitung pricing, cek HPS, dan kirim proposal untuk approval.</p>
+            <p>Kelola pricing, approval, dan dokumen final proposal.</p>
         </a>
     {% elif user.role == "MANAGER" %}
         <a class="card module-card module-link"
            href="{% url 'approval:queue' %}">
             <span class="module-icon" aria-hidden="true">AP</span>
             <h2>Persetujuan</h2>
-            <p>Tinjau, setujui, atau tolak proposal pengadaan.</p>
+            <p>Tinjau, putuskan, dan tandatangani proposal pengadaan.</p>
         </a>
     {% endif %}
 </section>

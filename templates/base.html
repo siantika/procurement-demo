@@ -66,7 +66,7 @@
                 <article class="toast"
                          data-toast
                          data-toast-id="{{ notification.pk }}"
-                         {% if notification.type == "OPTIMIZATION_FAILED" %}role="alert"{% else %}role="status"{% endif %}>
+                         {% if notification.type == "OPTIMIZATION_FAILED" or notification.type == "DOCUMENT_FAILED" %}role="alert"{% else %}role="status"{% endif %}>
                     <div class="toast-content">
                         <strong>{{ notification.title }}</strong>
                         <p>{{ notification.message }}</p>
@@ -74,6 +74,8 @@
                             <a href="{% url 'optimization:run-detail' notification.source_entity_id %}">Lihat optimization</a>
                         {% elif notification.source_entity_type == "BidProposalRevision" %}
                             <a href="{% url 'bids:revision-detail' notification.source_entity_id %}">Lihat Bid</a>
+                        {% elif notification.source_entity_type == "DocumentGenerationJob" %}
+                            <a href="{% url 'documents:job-detail' notification.source_entity_id %}">Lihat dokumen</a>
                         {% else %}
                             <a href="{% url 'notifications:list' %}">Lihat notifikasi</a>
                         {% endif %}

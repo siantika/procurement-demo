@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
@@ -15,11 +16,26 @@ from .forms import RejectBidForm
 from .services import approve_bid, reject_bid
 
 
-def _queue_queryset():
-    return BidProposalRevision.objects.filter(
-        status=BidStatus.WAITING_APPROVAL
-    ).select_related(
-        "bid_proposal__tender_request", "submitted_by", "selected_result"
+def _queue_queryset(user=None):
+    queryset = BidProposalRevision.objects.select_related(
+        "bid_proposal__tender_request",
+        "submitted_by",
+        "selected_result",
+        "approval_decision__decided_by",
+        "signature__signed_by",
+    )
+    if user is None:
+        return queryset.filter(status=BidStatus.WAITING_APPROVAL)
+    return queryset.filter(
+        Q(status=BidStatus.WAITING_APPROVAL)
+        | Q(
+            status__in=(
+                BidStatus.APPROVED,
+                BidStatus.SIGNED,
+                BidStatus.FINALIZED,
+            ),
+            approval_decision__decided_by=user,
+        )
     )
 
 
@@ -29,7 +45,7 @@ def approval_queue(request):
     return render(
         request,
         "approval/queue.html",
-        {"revisions": _queue_queryset()},
+        {"revisions": _queue_queryset(request.user)},
     )
 
 

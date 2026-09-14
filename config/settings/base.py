@@ -19,8 +19,10 @@ INSTALLED_APPS = [
     "apps.audit.apps.AuditConfig",
     "apps.bids.apps.BidsConfig",
     "apps.catalog.apps.CatalogConfig",
+    "apps.documents.apps.DocumentsConfig",
     "apps.notifications.apps.NotificationsConfig",
     "apps.optimization.apps.OptimizationConfig",
+    "apps.signatures.apps.SignaturesConfig",
     "apps.sourcing.apps.SourcingConfig",
     "apps.tender.apps.TenderConfig",
 ]
@@ -116,6 +118,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.optimization.tasks.reconcile_pending_runs",
         "schedule": 60.0,
     },
+    "reconcile-pending-document-jobs": {
+        "task": "apps.documents.tasks.reconcile_pending_jobs",
+        "schedule": 60.0,
+    },
 }
 
 OPTIMIZER_MAX_ITEMS = 100
@@ -128,6 +134,13 @@ OPTIMIZER_RECONCILIATION_GRACE_SECONDS = 60
 
 MINIO_BUCKET = "procurement-private"
 MINIO_SECURE = False
+
+DOCUMENT_TEMPLATE_VERSION = "1"
+DOCUMENT_SNAPSHOT_SCHEMA_VERSION = 1
+DOCUMENT_SOFT_TIME_LIMIT_SECONDS = 50
+DOCUMENT_HARD_TIME_LIMIT_SECONDS = 60
+DOCUMENT_RECONCILIATION_GRACE_SECONDS = 60
+DOCUMENT_MAX_PDF_BYTES = 10 * 1024 * 1024
 
 
 # Gunakan custom user model milik aplikasi accounts.

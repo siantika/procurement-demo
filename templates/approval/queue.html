@@ -7,25 +7,25 @@
     <div>
         <span class="eyebrow">Manager</span>
         <h1>Approval Bid</h1>
-        <p>Proposal yang menunggu keputusan internal.</p>
+        <p>Proposal yang menunggu keputusan atau signature Anda.</p>
     </div>
 </div>
 <section class="card table-card">
     <div class="table-wrap">
         <table class="data-table">
-            <thead><tr><th>Nomor</th><th>Tender</th><th>Submitter</th><th>Total bid</th><th>HPS</th><th>Aksi</th></tr></thead>
+            <thead><tr><th>Nomor</th><th>Tender</th><th>Status</th><th>Total bid</th><th>HPS</th><th>Aksi</th></tr></thead>
             <tbody>
                 {% for revision in revisions %}
                     <tr>
                         <td>{{ revision.bid_proposal.proposal_number }} · R{{ revision.revision_number }}</td>
                         <td>{{ revision.bid_proposal.tender_request.internal_code }}</td>
-                        <td>{{ revision.submitted_by.full_name }}</td>
+                        <td>{{ revision.get_status_display }}</td>
                         <td>Rp{{ revision.total_bid_value|floatformat:"2g" }}</td>
                         <td>{% if revision.is_hps_feasible is None %}Tidak tersedia{% elif revision.is_hps_feasible %}Memenuhi{% else %}Melebihi{% endif %}</td>
                         <td><a href="{% url 'approval:detail' revision.pk %}">Tinjau</a></td>
                     </tr>
                 {% empty %}
-                    <tr><td class="empty-cell" colspan="6">Tidak ada Bid yang menunggu approval.</td></tr>
+                    <tr><td class="empty-cell" colspan="6">Tidak ada Bid yang menunggu tindakan Anda.</td></tr>
                 {% endfor %}
             </tbody>
         </table>

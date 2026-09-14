@@ -11,3 +11,6 @@ db.sqlite3
 
 # Celery Beat runtime state
 celerybeat-schedule*
+
+# Local process manager state and logs
+.run/

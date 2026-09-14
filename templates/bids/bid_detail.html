@@ -26,6 +26,16 @@
                     <input type="hidden" name="expected_version" value="{{ proposal.version }}">
                     <button class="button button-primary" type="submit">Buat revision baru</button>
                 </form>
+            {% elif revision.status == "SIGNED" %}
+                <form method="post" action="{% url 'documents:finalize' revision.pk %}">
+                    {% csrf_token %}
+                    <button class="button button-primary" type="submit">Buat dokumen final</button>
+                </form>
+            {% elif revision.status == "FINALIZED" %}
+                <form method="post" action="{% url 'documents:finalize' revision.pk %}">
+                    {% csrf_token %}
+                    <button class="button button-secondary" type="submit">Buat versi PDF baru</button>
+                </form>
             {% endif %}
         {% elif is_current and user.role == "MANAGER" and revision.status == "WAITING_APPROVAL" %}
             <form method="post" action="{% url 'approval:approve' revision.pk %}">
@@ -34,6 +44,8 @@
                 <button class="button button-primary" type="submit">Setujui Bid</button>
             </form>
             <a class="button button-secondary" href="{% url 'approval:reject-form' revision.pk %}">Tolak Bid</a>
+        {% elif is_current and user.role == "MANAGER" and revision.status == "APPROVED" and revision.approval_decision.decided_by_id == user.id %}
+            <a class="button button-primary" href="{% url 'signatures:sign' revision.pk %}">Tandatangani Bid</a>
         {% endif %}
     </div>
 </div>
@@ -57,8 +69,33 @@
         {% if revision.max_margin_percent is not None %}<div><dt>Margin maksimum</dt><dd>{{ revision.max_margin_percent }}%</dd></div>{% endif %}
         {% if revision.submission_hash %}<div><dt>Submission hash</dt><dd class="hash-value">{{ revision.submission_hash }}</dd></div>{% endif %}
         {% if revision.approval_decision %}<div><dt>Keputusan Manager</dt><dd>{{ revision.approval_decision.get_decision_display }} · {{ revision.approval_decision.decided_by.full_name }}</dd></div>{% endif %}
+        {% if revision.signature %}<div><dt>Signature</dt><dd>{{ revision.signature.signer_name }} · {{ revision.signature.signed_at|date:"d M Y H:i" }}{% if revision.signature.image_object_key %} · dengan gambar{% endif %}</dd></div>{% endif %}
     </dl>
 </section>
+
+{% if revision.generation_jobs.all %}
+<section class="card table-card content-section">
+    <div class="section-heading padded-heading"><h2>Dokumen final</h2><p>Setiap generation menghasilkan version dan object baru.</p></div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead><tr><th>Version</th><th>Nomor dokumen</th><th>Status</th><th>Checksum</th><th>Aksi</th></tr></thead>
+            <tbody>
+                {% for job in revision.generation_jobs.all %}
+                    <tr>
+                        <td>V{{ job.document_version }}</td>
+                        <td>{{ job.input_snapshot.document.document_number }}</td>
+                        <td>{{ job.get_status_display }}</td>
+                        <td class="hash-value">{% if job.status == "COMPLETED" %}{{ job.final_document.sha256 }}{% else %}—{% endif %}</td>
+                        <td><a href="{% url 'documents:job-detail' job.pk %}">{% if job.status == "COMPLETED" %}Lihat / download{% else %}Lihat status{% endif %}</a></td>
+                    </tr>
+                {% empty %}
+                    <tr><td class="empty-cell" colspan="5">Belum ada dokumen final.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
 
 <section class="card table-card content-section">
     <div class="section-heading padded-heading"><h2>Rincian pricing</h2><p>Harga final dihitung menggunakan {{ revision.calculation_version }}.</p></div>

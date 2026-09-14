@@ -1,0 +1,94 @@
+@page {
+    size: A4;
+    margin: 20mm;
+}
+
+body {
+    color: #18302b;
+    font-family: "Noto Sans", "DejaVu Sans", sans-serif;
+    font-size: 10pt;
+    line-height: 1.5;
+}
+
+header {
+    border-bottom: 2px solid #147d6c;
+    margin-bottom: 24px;
+    padding-bottom: 14px;
+}
+
+h1 {
+    font-size: 20pt;
+    margin: 4px 0;
+}
+
+h2 {
+    color: #0d6356;
+    font-size: 12pt;
+    margin: 18px 0 8px;
+}
+
+p {
+    margin: 3px 0;
+}
+
+.document-label {
+    color: #147d6c;
+    font-size: 8pt;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+dl {
+    display: grid;
+    grid-template-columns: 36mm 1fr;
+    margin: 0;
+}
+
+dt {
+    color: #667873;
+    font-weight: bold;
+}
+
+dd {
+    margin: 0;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+th,
+td {
+    border: 1px solid #dbe5e2;
+    padding: 7px;
+    text-align: left;
+}
+
+th {
+    background: #edf7f4;
+}
+
+.decision-grid {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: 1fr 1fr;
+}
+
+.signature-image {
+    display: block;
+    height: auto;
+    margin: 8px 0;
+    max-height: 28mm;
+    max-width: 55mm;
+    object-fit: contain;
+}
+
+footer {
+    border-top: 1px solid #dbe5e2;
+    color: #667873;
+    font-size: 7pt;
+    margin-top: 28px;
+    overflow-wrap: anywhere;
+    padding-top: 8px;
+}

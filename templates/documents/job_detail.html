@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dokumen {{ job.input_snapshot.document.document_number }} · Procurement ERP{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <span class="eyebrow">Final Document · Version {{ job.document_version }}</span>
+        <h1>{{ job.input_snapshot.document.document_number }}</h1>
+        <p>{{ job.bid_revision.bid_proposal.proposal_number }} · Bid R{{ job.bid_revision.revision_number }}</p>
+    </div>
+    {% if job.status == "COMPLETED" %}
+        <a class="button button-primary" href="{% url 'documents:download' job.final_document.pk %}">Download PDF</a>
+    {% endif %}
+</div>
+
+{% if job.status == "FAILED" %}
+    <div class="alert" role="alert">
+        <p><strong>Pembuatan dokumen gagal.</strong> {{ job.safe_error_message }}</p>
+        {% if job.diagnostic_reference %}<p>Referensi diagnostic: <span class="hash-value">{{ job.diagnostic_reference }}</span></p>{% endif %}
+    </div>
+{% endif %}
+
+<section class="card detail-card"
+         data-document-job
+         data-status-url="{% url 'documents:job-status' job.pk %}"
+         data-terminal="{% if job.status == 'COMPLETED' or job.status == 'FAILED' %}true{% else %}false{% endif %}">
+    <dl class="detail-grid">
+        <div><dt>Status job</dt><dd><span class="status-badge" data-job-status>{{ job.get_status_display }}</span></dd></div>
+        <div><dt>Status Bid</dt><dd>{{ job.bid_revision.get_status_display }}</dd></div>
+        <div><dt>Document version</dt><dd>{{ job.document_version }}</dd></div>
+        <div><dt>Template</dt><dd>PDF v{{ job.template_version }}</dd></div>
+        <div><dt>Attempt</dt><dd>{{ job.attempt_count }}</dd></div>
+        <div><dt>Diminta oleh</dt><dd>{{ job.requested_by.full_name }}</dd></div>
+        <div><dt>Input hash</dt><dd class="hash-value">{{ job.input_hash }}</dd></div>
+        {% if job.status == "COMPLETED" %}
+            <div><dt>Checksum PDF</dt><dd class="hash-value">{{ job.final_document.sha256 }}</dd></div>
+            <div><dt>Ukuran</dt><dd>{{ job.final_document.size_bytes }} byte</dd></div>
+        {% endif %}
+    </dl>
+</section>
+
+<div class="form-actions content-section">
+    <a class="button button-secondary" href="{% url 'bids:revision-detail' job.bid_revision.pk %}">Kembali ke Bid</a>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}<script src="{% static 'documents/js/job_status.js' %}" defer></script>{% endblock %}
