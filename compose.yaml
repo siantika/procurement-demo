@@ -84,7 +84,13 @@ services:
       minio-init:
         condition: service_completed_successfully
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health/ready/"]
+      test:
+        - CMD
+        - curl
+        - --fail
+        - --header
+        - "X-Forwarded-Proto: https"
+        - http://localhost:8000/health/ready/
       interval: 10s
       timeout: 5s
       retries: 12
