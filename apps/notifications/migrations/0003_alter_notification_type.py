@@ -13,6 +13,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='notification',
             name='type',
-            field=models.CharField(choices=[('BID_WAITING_APPROVAL', 'Bid menunggu approval'), ('OPTIMIZATION_COMPLETED', 'Optimization selesai'), ('OPTIMIZATION_FAILED', 'Optimization gagal'), ('BID_REJECTED', 'Bid ditolak'), ('DOCUMENT_COMPLETED', 'Dokumen selesai'), ('DOCUMENT_FAILED', 'Dokumen gagal')], max_length=40),
+            field=models.CharField(choices=[('BID_WAITING_APPROVAL', 'Bid menunggu approval'), ('OPTIMIZATION_COMPLETED', 'Optimization selesai'), ('OPTIMIZATION_FAILED', 'Optimization gagal'), ('BID_APPROVED', 'Bid disetujui'), ('BID_REJECTED', 'Bid ditolak'), ('BID_SIGNED', 'Bid ditandatangani'), ('DOCUMENT_COMPLETED', 'Dokumen selesai'), ('DOCUMENT_FAILED', 'Dokumen gagal')], max_length=40),
         ),
     ]

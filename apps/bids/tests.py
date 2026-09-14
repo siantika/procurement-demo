@@ -362,6 +362,26 @@ class BidServiceTests(BidFixtureMixin, TestCase):
             ).exists()
         )
 
+    def test_approve_notifies_submitting_staff(self):
+        _proposal, revision = self.submitted_bid()
+
+        approve_bid(
+            actor=self.manager,
+            revision_id=revision.pk,
+            expected_version=revision.version,
+            correlation_id=self.correlation_id(),
+        )
+
+        notification = Notification.objects.get(
+            recipient=self.staff,
+            type="BID_APPROVED",
+        )
+        self.assertEqual(notification.source_entity_id, revision.pk)
+        self.assertIn(
+            revision.bid_proposal.proposal_number,
+            notification.message,
+        )
+
     def test_reject_requires_reason(self):
         _proposal, revision = self.submitted_bid()
 

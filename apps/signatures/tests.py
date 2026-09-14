@@ -15,6 +15,7 @@ from apps.audit.models import AuditEvent
 from apps.bids.choices import BidStatus
 from apps.bids.tests import BidFixtureMixin
 from apps.documents.storage import StoredObject
+from apps.notifications.models import Notification
 
 from .models import Signature
 from .services import sign_bid
@@ -53,6 +54,15 @@ class SignatureServiceTests(BidFixtureMixin, TestCase):
         self.assertIsNone(signature.image_object_key)
         self.assertTrue(
             AuditEvent.objects.filter(action="BID_SIGNED").exists()
+        )
+        notification = Notification.objects.get(
+            recipient=self.staff,
+            type="BID_SIGNED",
+        )
+        self.assertEqual(notification.source_entity_id, revision.pk)
+        self.assertIn(
+            revision.bid_proposal.proposal_number,
+            notification.message,
         )
 
     def test_other_manager_cannot_sign(self):

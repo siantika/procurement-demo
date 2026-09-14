@@ -121,7 +121,20 @@ def _decide(
             source_entity_id=revision.pk,
             read_at__isnull=True,
         ).update(read_at=decided_at)
-        if decision == ApprovalDecisionType.REJECTED:
+        if decision == ApprovalDecisionType.APPROVED:
+            create_notification(
+                recipient=revision.submitted_by,
+                notification_type=NotificationType.BID_APPROVED,
+                source_event_id=event.pk,
+                source_entity_type="BidProposalRevision",
+                source_entity_id=revision.pk,
+                title="Bid Proposal disetujui",
+                message=(
+                    f"{revision.bid_proposal.proposal_number} "
+                    "telah disetujui oleh Manager."
+                ),
+            )
+        else:
             create_notification(
                 recipient=revision.submitted_by,
                 notification_type=NotificationType.BID_REJECTED,

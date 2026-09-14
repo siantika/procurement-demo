@@ -25,6 +25,8 @@ from apps.documents.storage import (
     PrivateStorageError,
     store_private_object,
 )
+from apps.notifications.choices import NotificationType
+from apps.notifications.services import create_notification
 
 from .choices import SignatureAuditAction
 from .models import Signature
@@ -103,7 +105,7 @@ def _assert_approved_revision(*, revision, expected_version, actor):
 
 def _approved_revision_queryset():
     return BidProposalRevision.objects.select_related(
-        "bid_proposal", "approval_decision__decided_by"
+        "bid_proposal", "approval_decision__decided_by", "submitted_by"
     )
 
 
@@ -190,7 +192,7 @@ def sign_bid(
         revision.version += 1
         revision.full_clean()
         revision.save(update_fields=["status", "version", "updated_at"])
-        write_audit_event(
+        event = write_audit_event(
             actor=actor,
             entity_type="BidProposalRevision",
             entity_id=revision.pk,
@@ -205,5 +207,17 @@ def sign_bid(
                 "signature_id": str(signature.pk),
                 "has_image": image is not None,
             },
+        )
+        create_notification(
+            recipient=revision.submitted_by,
+            notification_type=NotificationType.BID_SIGNED,
+            source_event_id=event.pk,
+            source_entity_type="BidProposalRevision",
+            source_entity_id=revision.pk,
+            title="Bid Proposal ditandatangani",
+            message=(
+                f"{revision.bid_proposal.proposal_number} "
+                "telah ditandatangani oleh Manager."
+            ),
         )
         return signature
