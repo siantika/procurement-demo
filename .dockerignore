@@ -1,6 +1,7 @@
 .git
 .env
 .env.demo
+.env.vps
 .run
 .venv
 backups

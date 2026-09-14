@@ -16,3 +16,4 @@ celerybeat-schedule*
 .run/
 backups/
 .env.demo
+.env.vps

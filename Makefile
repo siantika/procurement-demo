@@ -4,7 +4,7 @@ export DEMO_ENV_FILE
 
 .PHONY: start stop restart status logs check docker-start docker-stop \
 	docker-restart docker-status docker-logs docker-seed docker-reset \
-	docker-smoke docker-backup
+	docker-smoke docker-backup docker-preflight docker-preflight-vps
 
 start:
 	@bash scripts/dev-services.sh start
@@ -26,9 +26,15 @@ check:
 	@uv run --env-file .env python manage.py check
 	@uv run --env-file .env python manage.py test
 
-docker-start:
+docker-preflight:
 	@test -f "$(DEMO_ENV_FILE)" || \
 		(echo "File environment demo tidak ditemukan: $(DEMO_ENV_FILE)" && false)
+	@docker compose config --quiet
+
+docker-preflight-vps: docker-preflight
+	@bash scripts/check-demo-env.sh "$(DEMO_ENV_FILE)"
+
+docker-start: docker-preflight
 	@docker compose up -d --build
 
 docker-stop:

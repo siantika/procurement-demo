@@ -19,6 +19,24 @@ DEMO_ENV_FILE=.env.demo docker compose config --quiet
 Semua target `docker-*` menerima override yang sama, misalnya
 `make docker-status DEMO_ENV_FILE=.env.demo.staging`.
 
+Untuk VPS publik, gunakan `.env.vps.example` sebagai sumber `.env.vps`,
+isi domain dan seluruh secret, lalu batasi permission-nya. Preflight VPS
+menolak placeholder, endpoint non-HTTPS, secure cookie yang mati, dan file
+environment yang dapat dibaca user lain.
+
+```bash
+chmod 600 .env.vps
+make docker-preflight-vps DEMO_ENV_FILE=.env.vps
+```
+
+Port loopback web dapat dipindahkan bila `8000` sudah dipakai aplikasi lain
+dengan `WEB_HOST_PORT`. Contoh VPS memakai `127.0.0.1:8002`, sehingga hanya
+reverse proxy yang dapat mengakses Gunicorn. Salin dan sesuaikan
+`deploy/nginx-procurement.conf.example`, terbitkan sertifikat TLS, lalu uji
+konfigurasi Nginx sebelum reload. Template sengaja dimulai sebagai HTTP agar
+Certbot dapat melakukan validasi pertama; jalankan `certbot --nginx --redirect`
+segera setelah virtual host aktif agar seluruh request dialihkan ke HTTPS.
+
 ## Menjalankan stack
 
 ```bash
