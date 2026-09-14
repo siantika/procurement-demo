@@ -3,14 +3,14 @@
 set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ENV_FILE="${DEMO_ENV_FILE:-${PROJECT_ROOT}/.env.demo}"
+ENV_FILE="${ENV_FILE:-${PROJECT_ROOT}/.env.vps}"
 if [[ "${ENV_FILE}" != /* ]]; then
     ENV_FILE="${PROJECT_ROOT}/${ENV_FILE}"
 fi
 BACKUP_ROOT="${PROJECT_ROOT}/backups"
 
 [[ -f "${ENV_FILE}" ]] || {
-    echo "File environment demo tidak ditemukan: ${ENV_FILE}" >&2
+    echo "File environment deployment tidak ditemukan: ${ENV_FILE}" >&2
     exit 1
 }
 grep -qx 'APP_ENV=demo' "${ENV_FILE}" || {

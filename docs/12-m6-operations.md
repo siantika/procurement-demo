@@ -5,19 +5,20 @@ diimplementasikan.
 
 ## Menyiapkan environment
 
-Salin `.env.demo.example` menjadi `.env.demo`, lalu ganti seluruh nilai
-`replace-with-*`. Nilai `MINIO_ACCESS_KEY` harus sama dengan
+Untuk VPS, salin `.env.vps.example` menjadi `.env.vps`, lalu ganti seluruh
+nilai `replace-with-*`. Nilai `MINIO_ACCESS_KEY` harus sama dengan
 `MINIO_ROOT_USER`; nilai `MINIO_SECRET_KEY` harus sama dengan
-`MINIO_ROOT_PASSWORD`. File `.env.demo` tidak boleh di-commit.
+`MINIO_ROOT_PASSWORD`. File `.env.vps` tidak boleh di-commit.
 
 Validasi konfigurasi sebelum menyalakan container:
 
 ```bash
-docker compose --env-file .env.demo config --quiet
+docker compose --env-file .env.vps config --quiet
 ```
 
-Semua target `docker-*` menerima override yang sama, misalnya
-`make docker-status DEMO_ENV_FILE=.env.demo.staging`.
+Semua target `docker-*` memakai `.env.vps` secara default dan menerima
+override yang sama, misalnya
+`make docker-status ENV_FILE=.env.vps.staging`.
 
 Untuk VPS publik, gunakan `.env.vps.example` sebagai sumber `.env.vps`,
 isi domain dan seluruh secret, lalu batasi permission-nya. Preflight VPS
@@ -26,7 +27,7 @@ environment yang dapat dibaca user lain.
 
 ```bash
 chmod 600 .env.vps
-make docker-preflight-vps DEMO_ENV_FILE=.env.vps
+make docker-preflight-vps
 ```
 
 Port loopback web dapat dipindahkan bila `8000` sudah dipakai aplikasi lain

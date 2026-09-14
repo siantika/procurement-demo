@@ -1,7 +1,7 @@
 SHELL := /bin/bash
-DEMO_ENV_FILE ?= .env.demo
-export DEMO_ENV_FILE
-COMPOSE = docker compose --env-file "$(DEMO_ENV_FILE)"
+ENV_FILE ?= .env.vps
+export ENV_FILE
+COMPOSE = docker compose --env-file "$(ENV_FILE)"
 
 .PHONY: start stop restart status logs check docker-start docker-stop \
 	docker-restart docker-status docker-logs docker-seed docker-reset \
@@ -28,12 +28,12 @@ check:
 	@uv run --env-file .env python manage.py test
 
 docker-preflight:
-	@test -f "$(DEMO_ENV_FILE)" || \
-		(echo "File environment demo tidak ditemukan: $(DEMO_ENV_FILE)" && false)
+	@test -f "$(ENV_FILE)" || \
+		(echo "File environment deployment tidak ditemukan: $(ENV_FILE)" && false)
 	@$(COMPOSE) config --quiet
 
 docker-preflight-vps: docker-preflight
-	@bash scripts/check-demo-env.sh "$(DEMO_ENV_FILE)"
+	@bash scripts/check-demo-env.sh "$(ENV_FILE)"
 
 docker-start: docker-preflight
 	@$(COMPOSE) up -d --build

@@ -2,10 +2,10 @@
 
 set -euo pipefail
 
-env_file="${1:-.env.demo}"
+env_file="${1:-.env.vps}"
 
 [[ -f "${env_file}" ]] || {
-    echo "File environment demo tidak ditemukan: ${env_file}" >&2
+    echo "File environment deployment tidak ditemukan: ${env_file}" >&2
     exit 1
 }
 

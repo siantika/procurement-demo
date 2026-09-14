@@ -5,14 +5,14 @@ x-app: &app
     context: .
   image: procurement-demo:local
   env_file:
-    - ${DEMO_ENV_FILE:-.env.demo}
+    - ${ENV_FILE:-.env.vps}
   restart: unless-stopped
 
 services:
   postgres:
     image: postgres:16.10-bookworm
     env_file:
-      - ${DEMO_ENV_FILE:-.env.demo}
+      - ${ENV_FILE:-.env.vps}
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -35,7 +35,7 @@ services:
   minio:
     image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
     env_file:
-      - ${DEMO_ENV_FILE:-.env.demo}
+      - ${ENV_FILE:-.env.vps}
     command: ["server", "/data", "--console-address", ":9001"]
     ports:
       - "127.0.0.1:9000:9000"
@@ -52,7 +52,7 @@ services:
   minio-init:
     image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
     env_file:
-      - ${DEMO_ENV_FILE:-.env.demo}
+      - ${ENV_FILE:-.env.vps}
     depends_on:
       minio:
         condition: service_healthy
@@ -147,7 +147,7 @@ services:
     image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
     profiles: ["tools"]
     env_file:
-      - ${DEMO_ENV_FILE:-.env.demo}
+      - ${ENV_FILE:-.env.vps}
     volumes:
       - ./backups:/backups
     entrypoint: ["/bin/sh", "-c"]
