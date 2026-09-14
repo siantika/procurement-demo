@@ -13,7 +13,7 @@ Salin `.env.demo.example` menjadi `.env.demo`, lalu ganti seluruh nilai
 Validasi konfigurasi sebelum menyalakan container:
 
 ```bash
-DEMO_ENV_FILE=.env.demo docker compose config --quiet
+docker compose --env-file .env.demo config --quiet
 ```
 
 Semua target `docker-*` menerima override yang sama, misalnya

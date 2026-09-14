@@ -24,12 +24,13 @@ backup_dir="${BACKUP_ROOT}/${backup_name}"
 mkdir -p "${backup_dir}"
 
 cd "${PROJECT_ROOT}"
-docker compose exec -T postgres pg_dump \
+compose=(docker compose --env-file "${ENV_FILE}")
+"${compose[@]}" exec -T postgres pg_dump \
     -U procurement -d procurement -Fc > "${backup_dir}/postgres.dump"
-docker compose run --rm --no-deps minio-client \
+"${compose[@]}" run --rm --no-deps minio-client \
     "mc alias set local http://minio:9000 \"\${MINIO_ROOT_USER}\" \"\${MINIO_ROOT_PASSWORD}\" >/dev/null && mc mirror --overwrite --preserve \"local/\${MINIO_BUCKET}\" \"/backups/${backup_name}/minio\""
 git rev-parse HEAD > "${backup_dir}/release-commit.txt"
-docker compose exec -T web python manage.py showmigrations \
+"${compose[@]}" exec -T web python manage.py showmigrations \
     > "${backup_dir}/migrations.txt"
 
 echo "Backup demo selesai: ${backup_dir}"

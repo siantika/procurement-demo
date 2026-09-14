@@ -1,6 +1,7 @@
 SHELL := /bin/bash
 DEMO_ENV_FILE ?= .env.demo
 export DEMO_ENV_FILE
+COMPOSE = docker compose --env-file "$(DEMO_ENV_FILE)"
 
 .PHONY: start stop restart status logs check docker-start docker-stop \
 	docker-restart docker-status docker-logs docker-seed docker-reset \
@@ -29,34 +30,34 @@ check:
 docker-preflight:
 	@test -f "$(DEMO_ENV_FILE)" || \
 		(echo "File environment demo tidak ditemukan: $(DEMO_ENV_FILE)" && false)
-	@docker compose config --quiet
+	@$(COMPOSE) config --quiet
 
 docker-preflight-vps: docker-preflight
 	@bash scripts/check-demo-env.sh "$(DEMO_ENV_FILE)"
 
 docker-start: docker-preflight
-	@docker compose up -d --build
+	@$(COMPOSE) up -d --build
 
 docker-stop:
-	@docker compose down
+	@$(COMPOSE) down
 
 docker-restart: docker-stop docker-start
 
 docker-status:
-	@docker compose ps
+	@$(COMPOSE) ps
 
 docker-logs:
-	@docker compose logs --tail=200 -f
+	@$(COMPOSE) logs --tail=200 -f
 
 docker-seed:
-	@docker compose exec web python manage.py seed_demo
+	@$(COMPOSE) exec web python manage.py seed_demo
 
 docker-reset:
-	@docker compose exec web python manage.py reset_demo_data \
+	@$(COMPOSE) exec web python manage.py reset_demo_data \
 		--confirm DEMO_ONLY
 
 docker-smoke:
-	@docker compose exec web python manage.py smoke_demo --runs 3
+	@$(COMPOSE) exec web python manage.py smoke_demo --runs 3
 
 docker-backup:
 	@bash scripts/backup-demo.sh
