@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load procurement_format %}
 
 {% block title %}Procurement Result · Procurement ERP{% endblock %}
 
@@ -41,7 +42,7 @@
         <div><dt>Status</dt><dd>{{ result.get_status_display }}</dd></div>
         <div><dt>Source</dt><dd>{{ result.get_source_type_display }}</dd></div>
         {% if result.optimization_run %}<div><dt>Optimization rank</dt><dd><a href="{% url 'optimization:run-detail' result.optimization_run.pk %}">#{{ result.rank }} · buka run</a></dd></div>{% endif %}
-        <div><dt>Total purchase</dt><dd>{% if result.total_purchase %}Rp{{ result.total_purchase|floatformat:"2g" }}{% else %}Belum dihitung{% endif %}</dd></div>
+        <div><dt>Total purchase</dt><dd>{% if result.total_purchase %}{{ result.total_purchase|idr }}{% else %}Belum dihitung{% endif %}</dd></div>
         <div><dt>Calculation version</dt><dd>{{ result.calculation_version }}</dd></div>
         <div><dt>Selection</dt><dd>{% if current_selection and current_selection.procurement_result_id == result.pk %}Pilihan aktif #{{ current_selection.selection_number }}{% else %}Tidak dipilih{% endif %}</dd></div>
         {% if result.source_result %}<div><dt>Source result</dt><dd><a href="{% url 'sourcing:result-detail' result.source_result.pk %}">{{ result.source_result.pk }}</a></dd></div>{% endif %}
@@ -52,7 +53,7 @@
     <section class="card table-card content-section">
         <div class="section-heading padded-heading">
             <h2>{{ item.product_snapshot.code }} — {{ item.product_snapshot.name }}</h2>
-            <p>Kebutuhan {{ item.requested_quantity_snapshot }} {{ item.unit_snapshot }} · Total {% if item.item_purchase_total %}Rp{{ item.item_purchase_total|floatformat:"2g" }}{% else %}belum final{% endif %}</p>
+            <p>Kebutuhan {{ item.requested_quantity_snapshot|quantity }} {{ item.unit_snapshot }} · Total {% if item.item_purchase_total %}{{ item.item_purchase_total|idr }}{% else %}belum final{% endif %}</p>
         </div>
         <div class="table-wrap">
             <table class="data-table">
@@ -62,9 +63,9 @@
                         <tr>
                             <td>{{ allocation.line_number }}</td>
                             <td>{{ allocation.supplier_snapshot.code }} — {{ allocation.supplier_snapshot.name }}</td>
-                            <td>{{ allocation.allocated_quantity }} {{ item.unit_snapshot }}</td>
-                            <td>Rp{{ allocation.net_purchase_price_snapshot|floatformat:"2g" }}</td>
-                            <td>Rp{{ allocation.allocation_purchase|floatformat:"2g" }}</td>
+                            <td>{{ allocation.allocated_quantity|quantity }} {{ item.unit_snapshot }}</td>
+                            <td>{{ allocation.net_purchase_price_snapshot|idr }}</td>
+                            <td>{{ allocation.allocation_purchase|idr }}</td>
                         </tr>
                     {% empty %}<tr><td colspan="5" class="empty-cell">Belum ada allocation.</td></tr>{% endfor %}
                 </tbody>

@@ -2,6 +2,10 @@ from django.db import models
 
 
 class NotificationType(models.TextChoices):
+    BID_WAITING_APPROVAL = (
+        "BID_WAITING_APPROVAL",
+        "Bid menunggu approval",
+    )
     OPTIMIZATION_COMPLETED = (
         "OPTIMIZATION_COMPLETED",
         "Optimization selesai",

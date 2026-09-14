@@ -3,14 +3,18 @@
 import uuid
 from decimal import Decimal
 
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
+from apps.accounts.choices import UserRole
 from apps.accounts.policies import require_procurement_staff
 from apps.audit.writer import write_audit_event
 from apps.core.domain.canonical_json import canonical_hash
 from apps.core.exceptions import ConcurrencyConflict, InvalidTransition
+from apps.notifications.choices import NotificationType
+from apps.notifications.services import create_notification
 from apps.sourcing.choices import ResultStatus
 from apps.sourcing.models import ProcurementResultSelection
 from apps.tender.models import TenderRequest
@@ -19,6 +23,8 @@ from .calculations import CALCULATION_VERSION, calculate_bid_pricing
 from .choices import BidAuditAction, BidStatus
 from .models import BidProposal, BidProposalItem, BidProposalRevision
 from .snapshots import SNAPSHOT_SCHEMA_VERSION, build_submission_snapshot
+
+User = get_user_model()
 
 
 def _write_event(
@@ -370,7 +376,7 @@ def submit_bid(
                 "updated_at",
             ]
         )
-        _write_event(
+        event = _write_event(
             actor=actor,
             proposal=revision.bid_proposal,
             revision=revision,
@@ -379,6 +385,25 @@ def submit_bid(
             from_status=previous_status,
             to_status=revision.status,
         )
+        managers = User.objects.filter(
+            role=UserRole.MANAGER,
+            is_active=True,
+        )
+        for manager in managers.iterator():
+            create_notification(
+                recipient=manager,
+                notification_type=(
+                    NotificationType.BID_WAITING_APPROVAL
+                ),
+                source_event_id=event.pk,
+                source_entity_type="BidProposalRevision",
+                source_entity_id=revision.pk,
+                title="Bid menunggu persetujuan",
+                message=(
+                    f"{revision.bid_proposal.proposal_number} "
+                    "telah dikirim dan menunggu keputusan Anda."
+                ),
+            )
         return revision
 
 

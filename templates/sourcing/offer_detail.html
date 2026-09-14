@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load procurement_format %}
 
 {% block title %}Offer {{ offer.supplier.code }} · Procurement ERP{% endblock %}
 
@@ -18,10 +19,10 @@
 </div>
 <section class="card detail-card">
     <dl class="detail-grid">
-        <div><dt>Harga dasar</dt><dd>Rp{{ offer.base_unit_price|floatformat:"2g" }}</dd></div>
+        <div><dt>Harga dasar</dt><dd>{{ offer.base_unit_price|idr }}</dd></div>
         <div><dt>Diskon</dt><dd>{{ offer.discount_percent }}%</dd></div>
-        <div><dt>Harga net</dt><dd>Rp{{ offer.net_purchase_price|floatformat:"2g" }}</dd></div>
-        <div><dt>Jumlah tersedia</dt><dd>{{ offer.available_quantity|default_if_none:"Tanpa batas" }}</dd></div>
+        <div><dt>Harga net</dt><dd>{{ offer.net_purchase_price|idr }}</dd></div>
+        <div><dt>Jumlah tersedia</dt><dd>{% if offer.available_quantity is None %}Tanpa batas{% else %}{{ offer.available_quantity|quantity }}{% endif %}</dd></div>
         <div><dt>Berlaku mulai</dt><dd>{{ offer.valid_from|date:"d M Y"|default:"—" }}</dd></div>
         <div><dt>Berlaku sampai</dt><dd>{{ offer.valid_until|date:"d M Y"|default:"—" }}</dd></div>
         <div><dt>Eligibility</dt><dd>{% if eligibility.eligible %}Eligible{% else %}Tidak eligible — {{ eligibility.message }}{% endif %}</dd></div>

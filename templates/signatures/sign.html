@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load procurement_format %}
 
 {% block title %}Tanda tangani {{ revision.bid_proposal.proposal_number }} · Procurement ERP{% endblock %}
 
@@ -7,7 +8,7 @@
     <div>
         <span class="eyebrow">Signature · Bid R{{ revision.revision_number }}</span>
         <h1>Tanda tangani Bid</h1>
-        <p>{{ revision.bid_proposal.proposal_number }} · Nilai Rp{{ revision.total_bid_value|floatformat:"2g" }}</p>
+        <p>{{ revision.bid_proposal.proposal_number }} · Nilai {{ revision.total_bid_value|idr }}</p>
     </div>
 </div>
 
@@ -16,11 +17,16 @@
         <h2>Konfirmasi keputusan</h2>
         <p>Signature bersifat final dan hanya dapat dibuat oleh Manager yang menyetujui proposal.</p>
     </div>
+    <div class="workflow-confirmation" role="status">
+        <span class="eyebrow">Persetujuan tercatat</span>
+        <h2>Bid telah Anda setujui</h2>
+        <p>Nilai {{ revision.total_bid_value|idr }} siap ditandatangani. Setelah dikirim, tanda tangan tidak dapat diubah.</p>
+    </div>
     <form method="post" enctype="multipart/form-data" class="stack-form" novalidate>
         {% csrf_token %}
         {{ form.expected_version }}
         {% if form.non_field_errors %}<div class="alert" role="alert">{{ form.non_field_errors }}</div>{% endif %}
-        <div class="field-group">
+        <div class="field-group confirmation-field">
             {{ form.confirmation.label_tag }}
             {{ form.confirmation }}
             {% for error in form.confirmation.errors %}<p class="field-error">{{ error }}</p>{% endfor %}

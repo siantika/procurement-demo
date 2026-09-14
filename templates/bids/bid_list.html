@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load procurement_format %}
 
 {% block title %}Bid Proposal · Procurement ERP{% endblock %}
 
@@ -21,7 +22,7 @@
                         <td>{{ row.proposal.tender_request.internal_code }}</td>
                         <td>R{{ row.revision.revision_number }}</td>
                         <td><span class="status-badge">{{ row.revision.get_status_display }}</span></td>
-                        <td>{% if row.revision.total_bid_value %}Rp{{ row.revision.total_bid_value|floatformat:"2g" }}{% else %}Belum dihitung{% endif %}</td>
+                        <td>{% if row.revision.total_bid_value %}{{ row.revision.total_bid_value|idr }}{% else %}Belum dihitung{% endif %}</td>
                         <td><a href="{% url 'bids:detail' row.proposal.pk %}">Buka</a></td>
                     </tr>
                 {% empty %}

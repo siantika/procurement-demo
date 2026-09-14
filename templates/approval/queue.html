@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load procurement_format %}
 
 {% block title %}Approval Bid · Procurement ERP{% endblock %}
 
@@ -20,9 +21,9 @@
                         <td>{{ revision.bid_proposal.proposal_number }} · R{{ revision.revision_number }}</td>
                         <td>{{ revision.bid_proposal.tender_request.internal_code }}</td>
                         <td>{{ revision.get_status_display }}</td>
-                        <td>Rp{{ revision.total_bid_value|floatformat:"2g" }}</td>
+                        <td>{{ revision.total_bid_value|idr }}</td>
                         <td>{% if revision.is_hps_feasible is None %}Tidak tersedia{% elif revision.is_hps_feasible %}Memenuhi{% else %}Melebihi{% endif %}</td>
-                        <td><a href="{% url 'approval:detail' revision.pk %}">Tinjau</a></td>
+                        <td><a href="{% url 'approval:detail' revision.pk %}">{% if revision.status == "APPROVED" %}Lanjut tanda tangan{% else %}Tinjau dan putuskan{% endif %}</a></td>
                     </tr>
                 {% empty %}
                     <tr><td class="empty-cell" colspan="6">Tidak ada Bid yang menunggu tindakan Anda.</td></tr>

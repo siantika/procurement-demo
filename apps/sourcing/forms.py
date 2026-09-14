@@ -6,6 +6,7 @@ from django.forms import BaseFormSet, formset_factory
 from django.utils import timezone
 
 from apps.catalog.models import Product, Supplier
+from apps.core.formatting import format_idr, format_quantity
 from apps.tender.models import TenderRequestItem, TenderRequestRevision
 
 from .models import SupplierOffer
@@ -82,13 +83,13 @@ class TenderRevisionChoiceField(forms.ModelChoiceField):
 class SupplierOfferChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, offer):
         availability = (
-            f"maks. {offer.available_quantity}"
+            f"maks. {format_quantity(offer.available_quantity)}"
             if offer.available_quantity is not None
             else "tanpa batas"
         )
         return (
             f"{offer.supplier.code} — {offer.product.code} — "
-            f"Rp{offer.net_purchase_price} ({availability})"
+            f"{format_idr(offer.net_purchase_price)} ({availability})"
         )
 
 

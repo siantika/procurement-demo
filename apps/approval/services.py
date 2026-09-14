@@ -11,6 +11,7 @@ from apps.bids.models import BidProposalRevision
 from apps.core.domain.canonical_json import canonical_hash
 from apps.core.exceptions import ConcurrencyConflict, InvalidTransition
 from apps.notifications.choices import NotificationType
+from apps.notifications.models import Notification
 from apps.notifications.services import create_notification
 
 from .choices import ApprovalAuditAction, ApprovalDecisionType
@@ -114,6 +115,12 @@ def _decide(
                 "decision_id": str(approval.pk),
             },
         )
+        Notification.objects.filter(
+            type=NotificationType.BID_WAITING_APPROVAL,
+            source_entity_type="BidProposalRevision",
+            source_entity_id=revision.pk,
+            read_at__isnull=True,
+        ).update(read_at=decided_at)
         if decision == ApprovalDecisionType.REJECTED:
             create_notification(
                 recipient=revision.submitted_by,

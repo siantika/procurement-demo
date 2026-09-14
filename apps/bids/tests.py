@@ -246,6 +246,20 @@ class BidServiceTests(BidFixtureMixin, TestCase):
         self.assertTrue(
             AuditEvent.objects.filter(action="BID_SUBMITTED").exists()
         )
+        notification = Notification.objects.get(
+            recipient=self.manager,
+            type="BID_WAITING_APPROVAL",
+        )
+        self.assertEqual(notification.source_entity_id, revision.pk)
+
+    def test_submitted_bid_appears_as_manager_toast(self):
+        _proposal, revision = self.submitted_bid()
+        self.client.force_login(self.manager)
+
+        response = self.client.get(reverse("dashboard"))
+
+        self.assertContains(response, "Bid menunggu persetujuan")
+        self.assertContains(response, str(revision.pk))
 
     def test_non_feasible_bid_cannot_be_submitted(self):
         _proposal, revision = self.priced_bid("20.0000")
@@ -301,14 +315,35 @@ class BidServiceTests(BidFixtureMixin, TestCase):
         proposal.refresh_from_db()
         self.assertEqual(revision.status, BidStatus.REJECTED)
         self.assertEqual(decision.reason, "Margin perlu diturunkan.")
-        self.assertEqual(Notification.objects.count(), 1)
+        self.assertTrue(
+            Notification.objects.filter(
+                recipient=self.staff,
+                type="BID_REJECTED",
+            ).exists()
+        )
         self.assertEqual(new_revision.status, BidStatus.DRAFT)
         self.assertEqual(new_revision.revision_number, 2)
         self.assertEqual(proposal.current_revision_number, 2)
         self.assertEqual(BidProposalRevision.objects.count(), 2)
 
-    def test_approve_changes_status_without_notification(self):
+    def test_approve_marks_all_manager_notifications_read(self):
+        other_manager = User.objects.create_user(
+            username="bid-manager-secondary",
+            email="bid-manager-secondary@example.test",
+            password="StrongPassword123!",
+            full_name="Bid Manager Secondary",
+            role=UserRole.MANAGER,
+        )
         _proposal, revision = self.submitted_bid()
+
+        self.assertEqual(
+            Notification.objects.filter(
+                recipient__in=[self.manager, other_manager],
+                type="BID_WAITING_APPROVAL",
+                read_at__isnull=True,
+            ).count(),
+            2,
+        )
 
         approve_bid(
             actor=self.manager,
@@ -319,7 +354,13 @@ class BidServiceTests(BidFixtureMixin, TestCase):
 
         revision.refresh_from_db()
         self.assertEqual(revision.status, BidStatus.APPROVED)
-        self.assertFalse(Notification.objects.exists())
+        self.assertFalse(
+            Notification.objects.filter(
+                recipient__in=[self.manager, other_manager],
+                type="BID_WAITING_APPROVAL",
+                read_at__isnull=True,
+            ).exists()
+        )
 
     def test_reject_requires_reason(self):
         _proposal, revision = self.submitted_bid()
@@ -407,3 +448,53 @@ class BidViewTests(BidFixtureMixin, TestCase):
             )
         )
         self.assertContains(reject_form, "Alasan penolakan")
+
+    def test_bid_detail_uses_consistent_display_format(self):
+        proposal, _revision = self.submitted_bid()
+        self.client.force_login(self.staff)
+
+        response = self.client.get(
+            reverse("bids:detail", kwargs={"proposal_id": proposal.pk})
+        )
+
+        self.assertContains(response, "Rp780.000.000,00")
+        self.assertContains(response, "100 unit")
+        self.assertNotContains(response, "100.000 unit")
+
+    def test_approved_bid_emphasizes_manager_decision(self):
+        proposal, revision = self.submitted_bid()
+        approve_bid(
+            actor=self.manager,
+            revision_id=revision.pk,
+            expected_version=revision.version,
+            correlation_id=self.correlation_id(),
+        )
+        self.client.force_login(self.manager)
+
+        response = self.client.get(
+            reverse("bids:detail", kwargs={"proposal_id": proposal.pk})
+        )
+
+        self.assertContains(response, "Persetujuan Manager")
+        self.assertContains(response, "Bid telah disetujui")
+        self.assertContains(response, "Tandatangani Bid")
+
+    def test_success_message_uses_success_alert(self):
+        self.create_selected_result()
+        self.client.force_login(self.staff)
+        self.client.post(
+            reverse("bids:create", kwargs={"tender_id": self.tender.pk})
+        )
+        proposal = BidProposal.objects.get()
+        revision = proposal.revisions.get()
+
+        response = self.client.post(
+            reverse("bids:price", kwargs={"proposal_id": proposal.pk}),
+            {
+                "expected_version": revision.version,
+                "target_margin_percent": "15.0000",
+            },
+            follow=True,
+        )
+
+        self.assertContains(response, 'class="alert alert-success"')

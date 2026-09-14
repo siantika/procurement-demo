@@ -139,6 +139,19 @@ class SignatureServiceTests(BidFixtureMixin, TestCase):
 
 
 class SignatureViewTests(SignatureServiceTests):
+    def test_sign_page_emphasizes_approval_and_confirmation(self):
+        revision = self.approved_bid()
+        self.client.force_login(self.manager)
+
+        response = self.client.get(
+            reverse(
+                "signatures:sign", kwargs={"revision_id": revision.pk}
+            )
+        )
+
+        self.assertContains(response, "Bid telah Anda setujui")
+        self.assertContains(response, "confirmation-field")
+
     def test_approver_can_sign_from_ui(self):
         revision = self.approved_bid()
         self.client.force_login(self.manager)

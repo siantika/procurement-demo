@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load procurement_format %}
 
 {% block title %}Pricing {{ proposal.proposal_number }} · Procurement ERP{% endblock %}
 
@@ -7,7 +8,7 @@
     <div>
         <span class="eyebrow">{{ proposal.proposal_number }}</span>
         <h1>Tetapkan target margin</h1>
-        <p>Total purchase Rp{{ revision.total_purchase|floatformat:"2g" }}. Sistem akan menghitung nilai bid dan kelayakan HPS.</p>
+        <p>Total purchase {{ revision.total_purchase|idr }}. Sistem akan menghitung nilai bid dan kelayakan HPS.</p>
     </div>
 </div>
 <section class="card form-card">

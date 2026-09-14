@@ -4,6 +4,7 @@ from unittest import TestCase
 from uuid import UUID
 
 from .domain.canonical_json import canonical_dumps, canonical_hash
+from .formatting import format_decimal, format_idr, format_quantity
 
 
 class CanonicalJsonTests(TestCase):
@@ -27,3 +28,18 @@ class CanonicalJsonTests(TestCase):
         second = {"name": "Pump", "quantity": Decimal("1.000")}
 
         self.assertEqual(canonical_hash(first), canonical_hash(second))
+
+
+class DisplayFormattingTests(TestCase):
+    def test_formats_idr_with_indonesian_separators(self):
+        self.assertEqual(
+            format_idr(Decimal("7800000.125")),
+            "Rp7.800.000,13",
+        )
+
+    def test_quantity_hides_insignificant_decimal_places(self):
+        self.assertEqual(format_quantity(Decimal("100.000")), "100")
+        self.assertEqual(format_quantity(Decimal("1234.500")), "1.234,5")
+
+    def test_decimal_hides_insignificant_places(self):
+        self.assertEqual(format_decimal(Decimal("15.0000")), "15")

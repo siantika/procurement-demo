@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.template.loader import render_to_string
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -200,7 +201,12 @@ class DocumentServiceTests(DocumentFixtureMixin, TestCase):
         job.refresh_from_db()
         self.assertEqual(revision.status, BidStatus.SIGNED)
         self.assertEqual(job.status, GenerationJobStatus.FAILED)
-        self.assertEqual(Notification.objects.count(), 1)
+        self.assertTrue(
+            Notification.objects.filter(
+                recipient=self.staff,
+                type="DOCUMENT_FAILED",
+            ).exists()
+        )
 
     def test_completion_finalizes_bid_and_is_idempotent(self):
         revision, job, document, content = self.complete_job()
@@ -300,6 +306,21 @@ class DocumentServiceTests(DocumentFixtureMixin, TestCase):
         _revision, job = self.pending_job()
         content = render_pdf_v1(job.input_snapshot)
         self.assertTrue(content.startswith(b"%PDF-"))
+
+    def test_pdf_html_uses_consistent_idr_and_quantity_format(self):
+        _revision, job = self.pending_job()
+
+        html = render_to_string(
+            "documents/pdf_v1.html",
+            {
+                "document": job.input_snapshot,
+                "signature_image_data_uri": None,
+            },
+        )
+
+        self.assertIn("Rp780.000.000,00", html)
+        self.assertIn("100 unit", html)
+        self.assertNotIn("100.000 unit", html)
 
     def test_verified_signature_image_is_embedded_in_pdf(self):
         _revision, job = self.pending_job()

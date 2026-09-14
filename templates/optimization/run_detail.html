@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load procurement_format %}
 {% load static %}
 
 {% block title %}Optimization {{ run.tender_request.internal_code }} · Procurement ERP{% endblock %}
@@ -57,7 +58,7 @@
                 {% for result in results %}
                     <tr>
                         <td>#{{ result.rank }}</td>
-                        <td>Rp{{ result.total_purchase|floatformat:"2g" }}</td>
+                        <td>{{ result.total_purchase|idr }}</td>
                         <td><span class="status-badge">{{ result.get_status_display }}</span></td>
                         <td><a href="{% url 'sourcing:result-detail' result.pk %}">Lihat result</a></td>
                     </tr>

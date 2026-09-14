@@ -52,7 +52,8 @@
         {% if messages %}
             <div class="message-list" aria-live="polite">
                 {% for message in messages %}
-                    <div class="alert" role="status">{{ message }}</div>
+                    <div class="alert alert-{{ message.level_tag }}"
+                         role="status">{{ message }}</div>
                 {% endfor %}
             </div>
         {% endif %}
@@ -63,7 +64,7 @@
                aria-label="Notifikasi terbaru"
                aria-live="polite">
             {% for notification in toast_notifications %}
-                <article class="toast"
+                <article class="toast {% if notification.type == 'OPTIMIZATION_FAILED' or notification.type == 'DOCUMENT_FAILED' %}toast-error{% else %}toast-success{% endif %}"
                          data-toast
                          data-toast-id="{{ notification.pk }}"
                          {% if notification.type == "OPTIMIZATION_FAILED" or notification.type == "DOCUMENT_FAILED" %}role="alert"{% else %}role="status"{% endif %}>

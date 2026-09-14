@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load procurement_format %}
 
 {% block title %}{{ proposal.proposal_number }} · Procurement ERP{% endblock %}
 
@@ -56,17 +57,34 @@
     </div>
 {% endif %}
 
+{% if revision.approval_decision and revision.approval_decision.decision == "APPROVED" %}
+    <section class="card workflow-confirmation" aria-labelledby="approval-confirmation-title">
+        <span class="eyebrow">Persetujuan Manager</span>
+        <h2 id="approval-confirmation-title">Bid telah disetujui</h2>
+        <p>
+            {{ revision.approval_decision.decided_by.full_name }} menyetujui
+            proposal ini pada {{ revision.approval_decision.decided_at|date:"d M Y H:i" }}.
+            {% if revision.signature %}
+                Tanda tangan telah dicatat atas nama {{ revision.signature.signer_name }}
+                pada {{ revision.signature.signed_at|date:"d M Y H:i" }}.
+            {% else %}
+                Tahap berikutnya adalah tanda tangan oleh Manager yang menyetujui.
+            {% endif %}
+        </p>
+    </section>
+{% endif %}
+
 <section class="card detail-card">
     <dl class="detail-grid">
         <div><dt>Status</dt><dd><span class="status-badge">{{ revision.get_status_display }}</span></dd></div>
         <div><dt>Procurement Result</dt><dd><a href="{% url 'sourcing:result-detail' revision.selected_result.pk %}">{{ revision.selected_result.pk }}</a></dd></div>
-        <div><dt>Total purchase</dt><dd>Rp{{ revision.total_purchase|floatformat:"2g" }}</dd></div>
-        <div><dt>Target margin</dt><dd>{% if revision.target_margin_percent is not None %}{{ revision.target_margin_percent }}%{% else %}Belum ditetapkan{% endif %}</dd></div>
-        <div><dt>Total bid</dt><dd>{% if revision.total_bid_value %}Rp{{ revision.total_bid_value|floatformat:"2g" }}{% else %}Belum dihitung{% endif %}</dd></div>
-        <div><dt>Gross profit</dt><dd>{% if revision.gross_profit is not None %}Rp{{ revision.gross_profit|floatformat:"2g" }}{% else %}Belum dihitung{% endif %}</dd></div>
-        <div><dt>Actual margin</dt><dd>{% if revision.actual_margin_percent is not None %}{{ revision.actual_margin_percent }}%{% else %}Belum dihitung{% endif %}</dd></div>
+        <div><dt>Total purchase</dt><dd>{{ revision.total_purchase|idr }}</dd></div>
+        <div><dt>Target margin</dt><dd>{% if revision.target_margin_percent is not None %}{{ revision.target_margin_percent|decimal_id }}%{% else %}Belum ditetapkan{% endif %}</dd></div>
+        <div><dt>Total bid</dt><dd>{% if revision.total_bid_value %}{{ revision.total_bid_value|idr }}{% else %}Belum dihitung{% endif %}</dd></div>
+        <div><dt>Gross profit</dt><dd>{% if revision.gross_profit is not None %}{{ revision.gross_profit|idr }}{% else %}Belum dihitung{% endif %}</dd></div>
+        <div><dt>Actual margin</dt><dd>{% if revision.actual_margin_percent is not None %}{{ revision.actual_margin_percent|decimal_id }}%{% else %}Belum dihitung{% endif %}</dd></div>
         <div><dt>Kelayakan HPS</dt><dd>{% if revision.is_hps_feasible is None %}HPS tidak tersedia{% elif revision.is_hps_feasible %}Memenuhi HPS{% else %}Melebihi HPS{% endif %}</dd></div>
-        {% if revision.max_margin_percent is not None %}<div><dt>Margin maksimum</dt><dd>{{ revision.max_margin_percent }}%</dd></div>{% endif %}
+        {% if revision.max_margin_percent is not None %}<div><dt>Margin maksimum</dt><dd>{{ revision.max_margin_percent|decimal_id }}%</dd></div>{% endif %}
         {% if revision.submission_hash %}<div><dt>Submission hash</dt><dd class="hash-value">{{ revision.submission_hash }}</dd></div>{% endif %}
         {% if revision.approval_decision %}<div><dt>Keputusan Manager</dt><dd>{{ revision.approval_decision.get_decision_display }} · {{ revision.approval_decision.decided_by.full_name }}</dd></div>{% endif %}
         {% if revision.signature %}<div><dt>Signature</dt><dd>{{ revision.signature.signer_name }} · {{ revision.signature.signed_at|date:"d M Y H:i" }}{% if revision.signature.image_object_key %} · dengan gambar{% endif %}</dd></div>{% endif %}
@@ -106,10 +124,10 @@
                 {% for item in revision.items.all %}
                     <tr>
                         <td>{{ item.product_snapshot.code }} — {{ item.product_snapshot.name }}</td>
-                        <td>{{ item.requested_quantity }} {{ item.unit }}</td>
-                        <td>Rp{{ item.item_purchase_total|floatformat:"2g" }}</td>
-                        <td>Rp{{ item.bid_unit_price|floatformat:"4g" }}</td>
-                        <td>Rp{{ item.item_bid_total|floatformat:"2g" }}</td>
+                        <td>{{ item.requested_quantity|quantity }} {{ item.unit }}</td>
+                        <td>{{ item.item_purchase_total|idr }}</td>
+                        <td>{{ item.bid_unit_price|idr }}</td>
+                        <td>{{ item.item_bid_total|idr }}</td>
                     </tr>
                 {% empty %}
                     <tr><td class="empty-cell" colspan="5">Tetapkan target margin untuk menghitung pricing.</td></tr>
@@ -124,7 +142,7 @@
     <div class="table-wrap">
         <table class="data-table">
             <thead><tr><th>Revision</th><th>Status</th><th>Nilai bid</th><th>Dibuat</th></tr></thead>
-            <tbody>{% for history in revisions %}<tr><td><a href="{% url 'bids:revision-detail' history.pk %}">R{{ history.revision_number }}</a></td><td>{{ history.get_status_display }}</td><td>{% if history.total_bid_value %}Rp{{ history.total_bid_value|floatformat:"2g" }}{% else %}—{% endif %}</td><td>{{ history.created_at|date:"d M Y H:i" }}</td></tr>{% endfor %}</tbody>
+            <tbody>{% for history in revisions %}<tr><td><a href="{% url 'bids:revision-detail' history.pk %}">R{{ history.revision_number }}</a></td><td>{{ history.get_status_display }}</td><td>{% if history.total_bid_value %}{{ history.total_bid_value|idr }}{% else %}—{% endif %}</td><td>{{ history.created_at|date:"d M Y H:i" }}</td></tr>{% endfor %}</tbody>
         </table>
     </div>
 </section>
