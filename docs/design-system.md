@@ -1,5 +1,8 @@
 # Procurement UI Design System
 
+> Status: Token/komponen implementasi dan aturan perubahan UI<br>
+> Terakhir diperbarui: 15 September 2026
+
 Dokumen ini adalah acuan visual untuk seluruh halaman Procurement ERP.
 Gunakan aturan ini sebelum membuat atau mengubah template dan CSS.
 
@@ -49,6 +52,8 @@ Gunakan CSS custom properties yang sudah didefinisikan pada `:root`.
 | `--primary-dark` | `#0d6356` | Hover dan aksen kuat |
 | `--danger` | `#a53b3b` | Error dan status berbahaya |
 | `--danger-bg` | `#fff1f1` | Latar pesan error |
+| `--shadow` | `0 18px 50px rgba(25, 59, 51, 0.08)` | Bayangan card/toast |
+| `--radius` | `18px` | Radius card |
 
 Jangan menambahkan warna hard-coded baru apabila token yang ada sudah dapat
 mewakili kebutuhan tersebut. Tambahkan token baru hanya jika warna mempunyai
@@ -104,6 +109,12 @@ Satu area form sebaiknya hanya memiliki satu aksi utama yang dominan.
 
 ### Form
 
+Gunakan partial `templates/components/form_fields.html` untuk field yang
+dipakai ulang. `apps/core/forms.py` menyediakan payload hidden
+`expected_version` untuk mutation yang memerlukan version check.
+Formset Tender memakai `templates/components/tender_item_fields.html`
+dan JavaScript lokal untuk tambah/hapus item.
+
 Gunakan `.stack-form` dan `.field-group`. Setiap input wajib memiliki label.
 Error harus tampil dekat dengan field dan dapat dipahami tanpa mengandalkan
 warna saja.
@@ -121,6 +132,15 @@ warna saja.
 </form>
 ```
 
+### Tabel, detail, dan pesan
+
+- `.table-card`, `.table-wrap`, dan `.data-table` untuk tabel dengan horizontal scroll pada layar sempit.
+- `.detail-card` dan `.detail-grid` untuk pasangan label/nilai.
+- `.form-actions` dan `.button-secondary` untuk kelompok aksi sekunder.
+- `.alert-success` untuk pesan sukses dan `.status-alert` untuk status proses; level pesan lain memakai fondasi `.alert` saat ini.
+- `.toast-region` dan `.toast` untuk maksimal tiga notifikasi unread pada render halaman; tombol close menyimpan dismissal di sessionStorage, tanpa mengubah read state database.
+- `.hash-value` untuk tipografi monospace hash; `.detail-grid dd` memberi `overflow-wrap: anywhere` pada nilai detail panjang.
+
 ### Status
 
 Gunakan `.status-badge` untuk role atau status singkat. Jangan menggunakan
@@ -135,7 +155,7 @@ apakah sebuah username terdaftar.
 ## Navigasi dan keamanan
 
 - Navigasi utama tetap berada di `templates/base.html`.
-- Tampilkan menu sesuai status `user.is_authenticated`.
+- Tampilkan menu sesuai status `user.is_authenticated` dan role: Admin Produk/Supplier, Staff Offer/Tender/Result/Bid, Manager Approval. Optimization juga tersedia melalui dashboard Staff.
 - Logout wajib menggunakan form `POST` dan `{% csrf_token %}`.
 - Jangan mengganti logout dengan link `GET`.
 - Jangan menampilkan password, permission internal, atau data sensitif.
@@ -150,6 +170,14 @@ Nama teknis seperti username dapat dipertahankan jika lebih mudah dipahami.
 - Gunakan "Keluar" untuk logout.
 - Gunakan "Profil" untuk profile.
 - Judul tombol harus menjelaskan tindakan yang akan terjadi.
+
+## PDF
+
+Dokumen PDF memakai template `templates/documents/pdf_v1.html` dan stylesheet
+`apps/documents/static/documents/css/pdf_v1.css`, terpisah dari layout web.
+Template v1 adalah A4 dengan margin 20mm, Noto Sans/DejaVu Sans fallback,
+dan gambar signature opsional. Dockerfile memasang font Noto; halaman web
+tetap memakai system font stack tanpa font CDN.
 
 ## Accessibility
 
@@ -181,4 +209,3 @@ uv run python manage.py check --settings=config.settings.test
 uv run python manage.py test apps.accounts.tests \
     --settings=config.settings.test
 ```
-

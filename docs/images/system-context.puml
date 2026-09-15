@@ -33,10 +33,11 @@ rectangle "Medical Procurement\nBid Optimizer" as System #DCFCE7 {
 actor "Supplier" as Supplier #F1F5F9
 rectangle "Instansi /\nPortal Tender" as Institution #F1F5F9
 
-Admin --> System : Kelola master\nProduct dan Supplier
-Staff --> System : Catat Tender Request dan Supplier Offer\nSusun, optimasi, dan pilih Procurement Result\nBuat dan submit Bid Proposal
+Admin --> System : Kelola akun melalui Django Admin\nKelola master Product dan Supplier
+Staff --> System : Catat Tender Request dan Supplier Offer\nSusun, optimasi, dan pilih Procurement Result\nBuat dan submit Bid Proposal\nFinalisasi dan buat versi PDF baru
 Manager --> System : Review Bid Proposal\nApprove / reject\nElectronic signature
-System --> Staff : Notifikasi proses\ndan Bid Proposal PDF
+System --> Staff : Notifikasi proses/keputusan\ndan Bid Proposal PDF
+System --> Manager : Notifikasi waiting approval\ndan authorized PDF download
 
 Supplier ..> Staff : Memberikan informasi offer\n(di luar aplikasi)
 Institution ..> Staff : Menerbitkan informasi tender\n(di luar aplikasi)

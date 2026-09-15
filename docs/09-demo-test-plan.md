@@ -2,255 +2,120 @@
 
 ## Medical Procurement Bid Optimizer
 
-> Status: Test baseline demo MVP  
-> Acuan: `02-business-rules.md`, `03-use-cases.md`, dan `07-technical-design.md`  
-> Terakhir diperbarui: 11 September 2026
+> Status: Dokumentasi implementasi saat ini<br>
+> Terakhir diperbarui: 15 September 2026
 
----
+## 1. Cakupan verifikasi
 
-## 1. Tujuan
+Dokumen ini memetakan suite yang benar-benar tersedia dan pemeriksaan manual yang perlu dilakukan operator. Nama test merupakan bukti cakupan, bukan pernyataan bahwa seluruh acceptance scenario lama telah diotomatisasi.
 
-Test plan memastikan demo tidak hanya tampak berjalan, tetapi menjaga empat risiko utama:
+## 2. Lingkungan
 
-1. angka procurement dan Bid benar;
-2. role serta lifecycle tidak dapat dilewati;
-3. histori tidak berubah setelah master data berubah;
-4. background retry/concurrency tidak membuat data ganda atau status palsu.
+- Python 3.12, dependency terkunci dalam `uv.lock`, dan PostgreSQL.
+- `config.settings.test` memakai `TEST_DATABASE_URL`, default `postgresql:///procurement_test`. Django membuat database test tersendiri; role PostgreSQL perlu hak membuat database tersebut.
+- Celery test memakai eager execution serta memory broker/result backend.
+- Test service/task memakai patch/mock publish atau storage sesuai fixture; suite renderer menghasilkan PDF nyata tetapi tidak mewajibkan MinIO live untuk semua test.
+- Race tests memakai TransactionTestCase dan koneksi/thread PostgreSQL. SQLite tidak didukung oleh database URL parser.
 
-Test plan ini bukan certification atau production performance test.
+## 3. Suite yang tersedia
 
----
-
-## 2. Lingkungan Test
-
-| Environment | Kegunaan |
+| File/suite | Perilaku yang diperiksa |
 |---|---|
-| Unit | Domain policy tanpa network/database bila memungkinkan |
-| Integration | PostgreSQL, Django service/model, transaction, constraint |
-| Worker integration | PostgreSQL + Redis/Celery test worker |
-| Storage integration | MinIO test bucket privat |
-| End-to-end | Build/image yang sama dengan demo |
+| `apps.accounts.tests` | UUID/identity/role/constraint, forms admin, password validation, session/CSRF/logout POST, login rate limit, role navigation, admin access |
+| `apps.accounts.test_services` | Mutation akun, authorization, dan audit |
+| `apps.accounts.test_seed_demo` | Password env wajib, tiga akun tanpa mencetak password, canonical business data, dan seed berulang tanpa duplikasi data/audit |
+| `apps.accounts.test_reset_demo` | APP_ENV/token guard, reset canonical namespace berulang, dan preservation akun unrelated |
+| `apps.accounts.test_smoke_demo` | Guard environment/runs dan orchestration jumlah rehearsal; bukan live worker E2E dalam unit suite |
+| `apps.catalog.tests` | Normalisasi/unique code, create/update/version/audit, inactive/reactivate Product, access dan views |
+| `apps.tender.tests` | Item/Product/HPS/revision validation, snapshots, immutability, stale version, dynamic formset/multiple items, views |
+| `apps.sourcing.tests` | Harga net, discount 100% ineligible, date/master eligibility, Offer correction/supersede/identity/version, views |
+| `apps.sourcing.test_results` | Allocation rounding/quantity/product/capacity, validation, live inactive Offer, corrupt price snapshot, VALID immutability, customization, selection/selection race, historic display |
+| `apps.optimization.test_engine` | Golden candidate, capacity shortage rejection, supplier-count tie break, dan candidate identifier independen dari urutan allocation |
+| `apps.optimization.tests` | Frozen input setelah deactivation, penolakan run aktif kedua, ranked result persistence, duplicate delivery, failed/retry run, notifications, role dan status/detail views |
+| `apps.bids.tests` | Golden margin/HPS pricing, selected-result requirement, create/price/submit/version, material immutability, rejection/revision, waiting/decision notifications, views |
+| `apps.approval.tests` | Decision immutability dan concurrent decision race menghasilkan satu row |
+| `apps.signatures.tests` | Approving Manager sign tanpa gambar, role/Manager lain ditolak, signature immutability, PNG private storage, dan signing page/confirmation flow |
+| `apps.documents.tests` | SIGNED sampai completion valid, active job reuse, failure, checksum/object verification, regeneration version/number, PDF renderer/signature embedding, stale uploaded-job recovery, download authorization/security headers |
+| `apps.notifications.tests` | Event deduplication, recipient-only read, unread/read toast |
+| `apps.audit.tests` | Actor snapshot, system actor, correlation validation, append-only guard, actor PROTECT/revision constraint |
+| `apps.core.tests` | Canonical JSON/hash dan format Rupiah/quantity/decimal |
+| `config.tests` | PostgreSQL/env parsing, correlation middleware, health/metrics/JSON log formatting |
 
-Test yang bergantung pada row lock, partial unique index, JSONB, dan concurrency wajib memakai PostgreSQL. Test bucket MinIO dipisahkan dari bucket demo dan dibersihkan berdasarkan test-run prefix.
+Kasus input-limit/timeout optimizer, PENDING publish recovery, repeated-product optimizer, invalid-image matrix, reset storage cleanup failure, dan document-task retry/backoff belum mempunyai test khusus dalam suite saat ini. Jangan menganggap seluruh behavior service otomatis tercakup.
 
----
+Tidak ada generic idempotency-key replay/conflict test karena fiturnya tidak ada. Tidak ada signature-profile replacement test, general orphan scanner test, atau Grafana/Telegram E2E. Rehearsal layanan nyata tetap terpisah dari test eager/mocked.
 
-## 3. Test Data Utama
-
-Golden dataset:
+## 4. Golden data
 
 ```text
-Requested quantity: 100 unit
-
-Supplier A
-  base price:       7,000,000.0000
-  discount:                   10%
-  available:              60.000
-  net price:       6,300,000.0000
-  allocation cost: 378,000,000.00
-
-Supplier B
-  base price:       7,500,000.0000
-  discount:                    5%
-  available:             100.000
-  net price:       7,125,000.0000
-  allocation:               40.000
-  allocation cost: 285,000,000.00
-
-Total purchase:      663,000,000.00
-Target margin:                 15%
-Total bid value:     780,000,000.00
-Gross profit:        117,000,000.00
-HPS:                 800,000,000.00
-Maximum margin:              17.1250%
-Feasible:                       yes
+Tender: 100 Infusion Pump, HPS Rp800.000.000
+Offer A: net Rp6.300.000 × 60 = Rp378.000.000
+Offer B: net Rp7.125.000 × 40 = Rp285.000.000
+Purchase: Rp663.000.000
+Margin: 15%
+Bid: Rp780.000.000
+Gross profit: Rp117.000.000
+Actual margin: 15%
+Max margin HPS: 17,125%
 ```
 
-Factory/fixture memakai Decimal string, UUID stabil hanya ketika test memerlukannya, dan server-controlled time.
+Harga Bid production dihitung per item/unit dengan canonical rounding; golden case ini menghasilkan nilai total tepat.
 
----
+## 5. Perintah verifikasi
 
-## 4. Automated Test Suites
-
-### 4.1 Calculation dan Validation
-
-| ID | Test | Expected result |
-|---|---|---|
-| CAL-001 | Discount 10% dari Rp7.000.000 | Net Rp6.300.000 |
-| CAL-002 | Allocation A60 + B40 | Total Rp663.000.000 |
-| CAL-003 | Target margin 15% | Bid Rp780.000.000 dan profit Rp117.000.000 |
-| CAL-004 | Bid sama dengan HPS | Feasible |
-| CAL-005 | Bid satu sen di atas HPS | Tidak feasible |
-| CAL-006 | Purchase lebih besar dari HPS | Margin non-negatif tidak feasible |
-| CAL-007 | Margin 0% | Bid sama dengan purchase |
-| CAL-008 | Margin >=100% atau negatif | Ditolak |
-| CAL-009 | Boundary `ROUND_HALF_UP` | Sesuai `idr-half-up-v1` |
-| CAL-010 | MANUAL/OPTIMIZER/CUSTOMIZED allocation sama | Nilai tersimpan identik |
-| VAL-001 | Allocation tepat memenuhi quantity | VALID |
-| VAL-002 | Allocation kurang/lebih | Ditolak |
-| VAL-003 | Product offer berbeda | Ditolak |
-| VAL-004 | Offer inactive/expired/belum valid | Ditolak |
-| VAL-005 | Allocation melewati available quantity | Ditolak |
-| VAL-006 | Offer digunakan Bid lain | Tetap eligible; bukan stok global |
-
-### 4.2 Authorization
-
-| ID | Actor dan action | Expected result |
-|---|---|---|
-| AUTH-001 | Anonymous membuka business page | Redirect login |
-| AUTH-002 | Staff mengubah Product/Supplier | 403 |
-| AUTH-003 | Admin membuat Tender/Offer | 403 |
-| AUTH-004 | Manager submit Bid | 403 |
-| AUTH-005 | Staff approve/reject | 403 |
-| AUTH-006 | Manager bukan approver melakukan sign | 403 |
-| AUTH-007 | Manager memicu finalization | 403 |
-| AUTH-008 | Admin/anonymous download PDF | 403/redirect atau 404 sesuai visibility policy |
-| AUTH-009 | Mutation tanpa CSRF | Ditolak |
-| AUTH-010 | Inactive user login | Ditolak |
-
-### 4.3 Lifecycle
-
-| ID | Scenario | Expected result |
-|---|---|---|
-| LIFE-001 | DRAFT result divalidasi lengkap | Menjadi VALID |
-| LIFE-002 | Edit VALID result | Ditolak |
-| LIFE-003 | Submit Bid tanpa selected result | Ditolak |
-| LIFE-004 | DRAFT -> WAITING_APPROVAL | Submission snapshot/hash tersimpan |
-| LIFE-005 | Approve/reject selain WAITING_APPROVAL | Ditolak |
-| LIFE-006 | Reject tanpa reason | Ditolak |
-| LIFE-007 | Revisi REJECTED | Revision DRAFT baru; history tetap |
-| LIFE-008 | Sign selain APPROVED | Ditolak |
-| LIFE-009 | Finalize selain SIGNED | Ditolak |
-| LIFE-010 | PDF render gagal | Bid tetap SIGNED |
-| LIFE-011 | PDF tersimpan dan diverifikasi | Bid menjadi FINALIZED |
-
-### 4.4 Optimizer dan Background Job
-
-| ID | Scenario | Expected result |
-|---|---|---|
-| JOB-001 | Golden dataset | Rank 1 total Rp663.000.000 |
-| JOB-002 | Tie total cost | Supplier count lalu candidate ID menentukan urutan |
-| JOB-003 | Capacity tidak cukup | COMPLETED, result count 0 |
-| JOB-004 | Snapshot dibuat lalu Offer berubah | Run tetap memakai nilai snapshot |
-| JOB-005 | Task OptimizationRun dikirim dua kali | Result/notification tidak ganda |
-| JOB-006 | Exception teknis | FAILED + safe error + diagnostic reference |
-| JOB-007 | Publish hilang setelah commit | Reconciliation publish ulang PENDING |
-| JOB-008 | PDF task dikirim dua kali | Satu FinalDocument per job/version |
-| JOB-009 | Upload sukses, DB commit gagal | Orphan terdeteksi reconciliation |
-| JOB-010 | Nol candidate | Tidak diklasifikasikan sebagai technical failure |
-
-### 4.5 Concurrency dan Idempotency
-
-| ID | Race | Expected result |
-|---|---|---|
-| CON-001 | Dua run dibuat untuk Tender yang sama | Satu active run |
-| CON-002 | Dua edit memakai expected version sama | Satu berhasil, satu 409 |
-| CON-003 | Approve dan reject concurrent | Tepat satu decision |
-| CON-004 | Dua selection concurrent | Sequence unik dan current selection jelas |
-| CON-005 | Dua request finalization | Version/job tidak ganda |
-| CON-006 | Idempotency key sama, payload sama | Outcome awal dikembalikan |
-| CON-007 | Idempotency key sama, payload berbeda | 409 conflict |
-
-### 4.6 Historical Integrity
-
-| ID | Perubahan setelah transaksi | Expected result |
-|---|---|---|
-| HIST-001 | Rename Product/Supplier | Result/Bid lama tetap menampilkan snapshot lama |
-| HIST-002 | Supersede Offer | Cost result lama tidak berubah |
-| HIST-003 | Revisi Tender | Submission lama tetap memakai revision lama |
-| HIST-004 | Ganti signature profile | Signature historis tidak berubah |
-| HIST-005 | Regenerate PDF | Version/object key baru; file lama tetap ada |
-| HIST-006 | Mutation AuditEvent melalui service/admin | Tidak tersedia atau ditolak |
-| HIST-007 | Canonical content yang sama | Hash sama |
-| HIST-008 | Perubahan material | Hash berbeda |
-
----
-
-## 5. End-to-End Tests
-
-### E2E-001 — Primary Success Flow
-
-1. Admin membuat Product dan Supplier.
-2. Staff membuat tiga Supplier Offer.
-3. Staff membuat Tender 100 Infusion Pump dengan HPS Rp800 juta.
-4. Staff menjalankan optimizer dan menunggu COMPLETED.
-5. Rank 1 menunjukkan A60 + B40 dan total Rp663 juta.
-6. Staff memilih result dan membuat Bid.
-7. Staff menetapkan margin 15%; Bid menjadi Rp780 juta dan feasible.
-8. Staff submit.
-9. Manager approve dan sign.
-10. Staff finalize dan menunggu job COMPLETED.
-11. Staff dan Manager dapat download PDF; actor lain tidak.
-
-Expected: seluruh status, angka, snapshot, hash, notification, audit, dan PDF sesuai.
-
-### E2E-002 — Rejection and Revision
-
-1. Staff submit Bid valid.
-2. Manager reject dengan reason.
-3. Submitter menerima satu notification.
-4. Staff membuat revision DRAFT baru dan mengubah margin.
-5. Revision lama, decision, reason, dan hash tetap tersedia.
-6. Revision baru dapat disubmit ulang.
-
-### E2E-003 — HPS Failure
-
-1. Pilih result purchase Rp663 juta.
-2. Tetapkan margin di atas 17,125% sehingga total Bid melewati HPS.
-3. UI menampilkan tidak feasible.
-4. Submission ditolak server-side walaupun request POST dibuat langsung.
-
----
-
-## 6. Manual Demo Readiness Checks
-
-Automated test tidak menggantikan pemeriksaan berikut:
-
-- layout terbaca pada laptop/proyektor target;
-- angka Rupiah dan status mudah dikenali;
-- loading/polling optimizer dan PDF jelas;
-- validation error tampil dekat input yang salah;
-- session pergantian Staff/Manager tidak tertukar;
-- PDF A4 tidak terpotong dan nama file aman;
-- halaman error tidak menampilkan stack trace;
-- data seed cocok dengan script presentasi.
-
----
-
-## 7. Eksekusi
-
-Perintah baseline setelah test suite tersedia:
+Dari root repository, dengan PostgreSQL test dapat diakses:
 
 ```bash
-python manage.py check
-python manage.py makemigrations --check --dry-run
-python manage.py test
-python manage.py check --deploy --settings=config.settings.demo
+uv sync --frozen
+uv run ruff check .
+uv run python manage.py check --settings=config.settings.test
+uv run python manage.py makemigrations --check --dry-run --settings=config.settings.test
+uv run python manage.py test --settings=config.settings.test
 ```
 
-Integration suite dijalankan dengan PostgreSQL/Redis/MinIO test services yang terisolasi. Perintah final dapat dibungkus Makefile atau Compose, tetapi wrapper harus mengembalikan non-zero exit code ketika test gagal.
+Untuk perubahan authentication/template, pemeriksaan minimum repository:
 
----
+```bash
+uv run python manage.py test apps.accounts.tests --settings=config.settings.test
+```
 
-## 8. Defect Severity
+Jika membutuhkan `TEST_DATABASE_URL` dari `.env`, gunakan `uv run --env-file .env` dan tetap sertakan `--settings=config.settings.test`. Target `make check` memuat `.env` dan mengikuti settings di sana; perintah eksplisit di atas memilih settings test secara pasti.
 
-| Severity | Contoh | Keputusan demo |
-|---|---|---|
-| Blocker | Login gagal, angka salah, final PDF tidak ada, data corrupt | Demo tidak boleh dilanjutkan |
-| High | Permission bypass, illegal transition, duplicate decision/document | Demo tidak boleh dilanjutkan |
-| Medium | Error message buruk, filter/list bermasalah dengan workaround | Perbaiki atau dokumentasikan workaround |
-| Low | Cosmetic spacing atau copy minor | Boleh ditunda jika tidak mengganggu cerita |
+Deployment check memakai environment demo yang sudah diisi:
 
----
+```bash
+uv run --env-file .env.vps python manage.py check --deploy --settings=config.settings.demo
+```
 
-## 9. Exit Criteria
+Check ini memeriksa settings Django; bukan pengganti HTTPS, database, queue, dan storage rehearsal pada stack target. Jika hostname layanan Compose tidak dapat dijangkau host, jalankan pemeriksaan runtime dari container.
 
-Build lulus test plan bila:
+## 6. Rehearsal layanan nyata
 
-- seluruh test CAL, AUTH, LIFE, JOB, CON, dan HIST wajib lulus;
-- E2E-001 lulus tiga kali berturut-turut dari data reset;
-- E2E-002 dan E2E-003 minimal lulus sekali pada release candidate;
-- tidak ada Blocker atau High defect terbuka;
-- PDF golden case memiliki angka dan metadata yang benar;
-- test report mencatat commit/image version, migration state, waktu, dan executor.
+Pada Compose demo yang sudah sehat dan di-seed:
 
+```bash
+make docker-smoke
+```
+
+Target menjalankan `smoke_demo --runs 3`: optimization, select, Bid margin 15%, submit, approve, sign tanpa gambar, finalization, dan authorized download. Setiap pengulangan menambah record baru tanpa reset otomatis. Command menunggu status DB, maksimum default 90 detik untuk optimization dan 90 detik untuk document job.
+
+Periksa juga melalui UI:
+
+1. Login dengan browser Staff/Manager terpisah; lihat role navigation.
+2. Optimization rank 1 A60+B40, purchase Rp663 juta; pilih result secara eksplisit.
+3. Margin 15% menghasilkan Bid Rp780 juta; margin 18% tersimpan sebagai DRAFT infeasible dan submission ditolak.
+4. Manager reject dengan reason; Staff menerima notifikasi dan membuat revision baru dengan margin kembali.
+5. Approving Manager sign, termasuk uji gambar opsional; Manager lain ditolak.
+6. Staff finalize; lihat polling, download PDF dan versi berikutnya dari UI.
+7. Pulihkan broker/worker yang berhenti dan periksa PENDING reconciliation. Untuk optimization RUNNING stale, jangan mengasumsikan recovery otomatis.
+8. Periksa regeneration gagal tetap mempertahankan PDF final lama; uji restore backup di environment terisolasi.
+
+## 7. Pemeriksaan visual/manual
+
+- Login normal/error, dashboard authenticated, profil dengan nama/email panjang.
+- Desktop/mobile sampai 320px, keyboard navigation dan visible focus.
+- Form label/error, empty/loading/error states, angka Rupiah, long hash/name wrapping.
+- PDF A4, pricing, nomor/revision/version, signer, validity, dan signature image bila dipakai.
+- Permission salah ditolak server dan response tidak membocorkan detail sensitif.
+
+Pemeriksaan manual ini belum diotomatisasi sebagai browser test dalam repository. Catat commit/image, migration state, waktu, executor, hasil, serta defect. Masalah angka, authorization, histori, atau integrity PDF perlu diselesaikan sebelum memakai build untuk demo.

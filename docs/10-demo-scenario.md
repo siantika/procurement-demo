@@ -2,9 +2,9 @@
 
 ## Medical Procurement Bid Optimizer
 
-> Durasi target: 12–15 menit  
-> Skenario: Optimasi pengadaan Infusion Pump sampai Final PDF  
-> Terakhir diperbarui: 11 September 2026
+> Durasi target: 12–15 menit
+> Skenario: Optimasi pengadaan Infusion Pump sampai Final PDF
+> Terakhir diperbarui: 15 September 2026
 
 ---
 
@@ -30,7 +30,7 @@ Jangan menghabiskan waktu pada CRUD yang berulang. Fokus pada keputusan bisnis d
 | Manager | Review, approve, dan sign |
 | Admin | Ditunjukkan singkat hanya bila perlu menjelaskan master data |
 
-Username dapat dicantumkan pada catatan operator lokal. Password tidak dimasukkan ke dokumen atau slide.
+Akun seed adalah `demo-staff`, `demo-manager`, dan `demo-admin`. Password wajib dari environment seed dan tidak dimasukkan ke dokumen atau slide.
 
 ---
 
@@ -68,7 +68,7 @@ Status        = Feasible
 Sebelum audiens hadir:
 
 - seluruh service sehat;
-- Product, Supplier, Offer, dan Tender sudah di-seed;
+- Product, Supplier, Offer, Tender, dan manual VALID result canonical sudah di-seed; seed tidak membuat optimizer run, Bid, atau PDF;
 - belum ada active OptimizationRun untuk Tender demo;
 - browser Staff berada di halaman login atau dashboard;
 - browser/profile terpisah untuk Manager sudah siap tetapi belum login;
@@ -81,6 +81,8 @@ Master data boleh sudah tersedia agar waktu digunakan untuk alur bernilai tinggi
 ---
 
 ## 5. Primary Demo Flow
+
+Durasi per langkah berikut adalah perkiraan. Jika seluruh langkah memakai batas atas, total dapat melebihi 15 menit; ringkas review input dan riwayat sesuai waktu presentasi.
 
 ### Step 1 — Login sebagai Procurement Staff
 
@@ -106,7 +108,7 @@ Durasi: 2 menit.
 
 Action:
 
-1. Buka Product Infusion Pump.
+1. Buka daftar Offer dan tunjukkan Product Infusion Pump dari informasi Offer. Halaman katalog Product hanya untuk Admin.
 2. Buka tiga Supplier Offer dan tunjukkan harga net/ketersediaan.
 3. Buka Tender dan tunjukkan quantity 100 serta HPS Rp800 juta.
 
@@ -147,7 +149,7 @@ Action:
 
 1. Bandingkan rank 1 dengan alternatif.
 2. Pilih rank 1.
-3. Tunjukkan selected result dan audit event.
+3. Tunjukkan selected result pada detail Result/Tender. Audit selection disimpan di model, tanpa halaman audit terpisah.
 
 Expected:
 
@@ -191,7 +193,7 @@ Action:
 
 Expected:
 
-- hanya WAITING_APPROVAL tampil di queue;
+- queue menampilkan WAITING_APPROVAL dan APPROVED/SIGNED/FINALIZED yang disetujui Manager tersebut;
 - approval mengubah status menjadi APPROVED;
 - hanya approving Manager dapat sign;
 - signature mengubah status menjadi SIGNED;
@@ -218,20 +220,21 @@ Expected:
 - checksum dan version tersedia pada detail document;
 - download berhasil untuk Staff/Manager berizin.
 
-Talking point: PDF lama tidak ditimpa; regeneration menghasilkan version dan object baru.
+Talking point: PDF lama tetap tersedia; tombol "Buat versi PDF baru" pada FINALIZED menghasilkan job, nomor, version, dan object baru. Jika regeneration gagal, Bid tetap FINALIZED dan versi lama tetap dapat diunduh.
 
-### Step 8 — Tutup dengan Audit Trail
+### Step 8 — Tinjau Riwayat dan Metadata
 
 Durasi: 1 menit.
 
 Action:
 
-1. Buka timeline/audit proposal.
-2. Tunjukkan selection, submission, approval, signing, dan finalization.
+1. Buka detail Bid, riwayat revision, dan daftar generation job.
+2. Tunjukkan status, submission hash, Manager decision, signature, serta nomor/version/checksum PDF.
+3. Jelaskan bahwa AuditEvent disimpan oleh sistem; belum ada halaman timeline audit tersendiri.
 
 Expected:
 
-- urutan event, actor, dan timestamp jelas;
+- riwayat revision/job, actor keputusan/signing, timestamp, dan status dapat dilihat pada halaman yang tersedia;
 - snapshot historis tetap terpisah dari master current.
 
 Penutup: sistem membantu mencari procurement cost efisien tanpa mengambil alih keputusan Staff dan Manager.
@@ -244,11 +247,11 @@ Gunakan hanya jika ada waktu atau audiens bertanya.
 
 ### HPS Tidak Feasible
 
-Ubah target margin menjadi nilai di atas 17,125%. UI harus menandai tidak feasible dan server menolak submission.
+Gunakan Bid DRAFT tersendiri sebelum submission. Masukkan margin 18% agar Bid melebihi HPS; UI menandai tidak feasible dan server menolak submission. Bid yang sudah disubmit/finalized tidak dapat diubah margin-nya.
 
 ### Rejection dan Revision
 
-Manager reject dengan alasan. Staff menerima notification lalu membuat revision baru; submission lama tetap ada.
+Gunakan Bid WAITING_APPROVAL tersendiri. Manager reject dengan alasan. Staff menerima notification lalu membuat revision DRAFT baru dari current selection, menetapkan margin kembali, dan submit; submission lama tetap ada.
 
 ### Permission Proof
 
@@ -256,7 +259,7 @@ Buka mutation URL dengan role yang salah dan tunjukkan 403/404 tanpa detail sens
 
 ### Historical Integrity
 
-Ubah nama Product current lalu buka Bid/PDF lama. Snapshot lama tetap menampilkan nilai saat transaksi.
+Dengan session Admin terpisah, ubah nama Product current lalu buka Bid/PDF lama. Snapshot lama tetap menampilkan nilai saat transaksi. Lakukan setelah primary flow karena seed memverifikasi nama Product canonical dan menolak mismatch.
 
 ---
 
@@ -265,7 +268,7 @@ Ubah nama Product current lalu buka Bid/PDF lama. Snapshot lama tetap menampilka
 - Jangan mengubah seed angka ketika demo sedang berjalan.
 - Jangan membuka Django Admin, MinIO Console, terminal berisi environment, atau operational log yang mungkin sensitif di depan audiens.
 - Jangan menjanjikan submission portal, stock reservation, atau production SLA; ketiganya di luar scope.
-- Jangan menyebut seluruh 20 result sebagai optimum global. Rank pertama optimum untuk model v1; alternatif berasal dari bounded deterministic exploration.
+- Jangan menyebut ranked result sebagai enumerasi seluruh solusi atau optimum global untuk semua variasi input. Engine menggunakan bounded deterministic exploration; ranking berlaku pada kandidat yang ditemukan. Golden case rank 1 adalah A60+B40.
 - Jika background job memerlukan waktu, jelaskan frozen snapshot dan asynchronous processing; jangan klik action berulang kali.
 
 ---
@@ -296,4 +299,3 @@ Demo berhasil bila audiens dapat melihat:
 - Manager approve dan sign;
 - Staff menghasilkan serta mengunduh PDF final;
 - seluruh keputusan memiliki actor, status, timestamp, snapshot/hash, dan audit trail.
-

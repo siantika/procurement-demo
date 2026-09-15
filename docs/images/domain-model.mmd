@@ -1,0 +1,22 @@
+erDiagram
+    TenderRequest ||--|{ TenderRequestRevision : revisions
+    TenderRequestRevision ||--|{ TenderRequestItem : requirements
+    TenderRequestRevision ||--o{ ProcurementResult : solutions
+    TenderRequestRevision ||--o{ OptimizationRun : input
+    OptimizationRun ||--o{ ProcurementResult : produces
+    OptimizationRun ||--o{ OptimizationCandidateRejection : rejects
+    ProcurementResult ||--|{ ProcurementResultItem : items
+    ProcurementResultItem ||--o{ SupplierAllocation : allocations
+    SupplierOffer ||--o{ SupplierAllocation : source
+    TenderRequest ||--o{ ProcurementResultSelection : selection_history
+    ProcurementResult ||--o{ ProcurementResultSelection : chosen
+    TenderRequest ||--o{ BidProposal : proposals
+    BidProposal ||--|{ BidProposalRevision : revisions
+    ProcurementResult ||--o{ BidProposalRevision : selected_result
+    BidProposalRevision ||--o{ BidProposalItem : pricing
+    BidProposalRevision ||--o| ApprovalDecision : decision
+    BidProposalRevision ||--o| Signature : signature
+    ApprovalDecision ||--o| Signature : signed_approval
+    BidProposalRevision ||--o{ DocumentGenerationJob : jobs
+    DocumentGenerationJob ||--o| FinalDocument : output
+    BidProposalRevision ||--o{ FinalDocument : versions

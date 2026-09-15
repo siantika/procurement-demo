@@ -1,5 +1,8 @@
 # M6 Demo Operations
 
+> Status: Command yang tersedia saat ini<br>
+> Terakhir diperbarui: 15 September 2026
+
 Dokumen ini melengkapi `11-demo-runbook.md` dengan command yang sudah
 diimplementasikan.
 
@@ -49,8 +52,8 @@ make docker-seed
 Endpoint minimum:
 
 - `GET /health/live/` untuk liveness process;
-- `GET /health/ready/` untuk database dan migration readiness;
-- `GET /metrics/` untuk metrik HTTP dan background job tanpa label UUID.
+- `GET /health/ready/` untuk database dan migration readiness saja; Redis, MinIO, dan worker harus diperiksa terpisah;
+- `GET /metrics/` untuk metrik HTTP in-process dan jumlah row/status job serta umur PENDING tanpa label UUID; belum ada Grafana/Telegram stack.
 
 ## Rehearsal
 
@@ -60,21 +63,23 @@ Jalankan primary scenario tiga kali melalui worker dan private storage:
 make docker-smoke
 ```
 
+Setiap pengulangan smoke membuat run/Bid/dokumen baru tanpa reset otomatis.
 Smoke harus menghasilkan purchase `Rp663.000.000`, Bid `Rp780.000.000`,
 dan PDF yang lolos verifikasi checksum.
 
 ## Reset aman
 
 Reset hanya berjalan bila `APP_ENV=demo` dan confirmation token tepat.
-Command hanya menghapus namespace canonical `demo-*`, `PUMP-001`,
-`SUP-A..C`, `DEMO-OFFER-*`, dan `DEMO-TENDER-001` beserta turunannya.
+Command menargetkan akun `demo-admin`, `demo-staff`, `demo-manager`,
+Product `PUMP-001`, Supplier `SUP-A..C`, Offer `DEMO-OFFER-A..C`,
+dan `DEMO-TENDER-001` beserta workflow turunannya.
 
 ```bash
 make docker-reset
 make docker-seed
 ```
 
-PostgreSQL migration history dan object di luar dataset demo tidak dihapus.
+PostgreSQL migration history, document-number sequence tahunan, dan object di luar dataset demo tidak dihapus. Notifikasi recipient demo dan audit actor/entity demo ikut direset. Reset bukan pembersih orphan bucket umum.
 
 ## Backup
 
@@ -83,7 +88,9 @@ make docker-backup
 ```
 
 Artefak berada di `backups/demo-<UTC>/` dan berisi dump PostgreSQL,
-salinan object MinIO, commit release, dan migration state. Direktori backup
+mirror current objects seluruh bucket MinIO, commit release, dan migration state.
+Script tidak membekukan mutation/job, mengenkripsi, mengirim off-host,
+atau menyalin seluruh riwayat object versions secara otomatis. Direktori backup
 tidak di-commit. Salin dan enkripsi artefak di media terpisah sesuai
 kebijakan operator.
 
@@ -99,5 +106,14 @@ make docker-stop
 ```
 
 Jika job tertahan, periksa worker sesuai queue dan biarkan reconciliation
-memublikasikan ulang record PENDING. Bid tetap `SIGNED` ketika rendering PDF
-gagal; jangan mengubah status secara manual.
+memublikasikan ulang record PENDING. Optimization RUNNING stale belum
+dipulihkan otomatis; document RUNNING stale diperiksa melalui object key
+setelah hard timeout + grace. Pada finalization pertama Bid tetap `SIGNED`
+ketika rendering gagal. Pada regeneration Bid tetap `FINALIZED` dan PDF
+lama tersedia; jangan mengubah status secara manual. Staff dapat meminta
+pembuatan dokumen lagi setelah job terminal untuk job/version baru.
+
+Untuk Compose HTTP lokal gunakan `.env.demo.example` sebagai `.env.demo`
+dan `ENV_FILE=.env.demo` pada seluruh target. Development host memakai
+`.env.example`/`.env` dan `make start`; prosedur lengkap ada di
+[Demo Runbook](11-demo-runbook.md).

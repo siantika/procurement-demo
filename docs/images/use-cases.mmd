@@ -1,0 +1,24 @@
+flowchart LR
+    A[Admin] --> U[Kelola akun Django Admin]
+    A --> C[Product dan Supplier]
+    S[Procurement Staff] --> O[Supplier Offer]
+    S --> T[Tender dan revision]
+    S --> R[Manual / Optimization / Customized result]
+    R --> E[Validasi dan explicit selection]
+    S --> E
+    E --> B[Bid DRAFT dan pricing]
+    S --> B
+    B --> Q[Submit WAITING_APPROVAL]
+    M[Manager] --> D[Review dan approve / reject]
+    Q --> D
+    D -->|Approve| G[Approving Manager sign]
+    D -->|Reject| V[Staff membuat revision DRAFT baru]
+    V --> B
+    G --> F[Staff finalization / PDF regeneration]
+    S --> F
+    F --> P[Private PDF download]
+    S --> P
+    M --> P
+    A --> N[Profil / Notifikasi sendiri / Session]
+    S --> N
+    M --> N

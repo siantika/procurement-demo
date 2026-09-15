@@ -2,320 +2,159 @@
 
 ## Medical Procurement Bid Optimizer
 
-> Status: Prosedur operasi demo MVP  
-> Lingkungan: Single VPS Docker Compose, best-effort  
-> Terakhir diperbarui: 11 September 2026
+> Status: Dokumentasi implementasi saat ini<br>
+> Terakhir diperbarui: 15 September 2026
 
----
+## 1. Lingkungan dan komponen
 
-## 1. Tujuan dan Batas
+Runbook menggunakan command yang sudah ada. Compose demo menjalankan PostgreSQL, Redis, MinIO/bucket init, Django web, optimization worker, document worker, dan Celery beat. Nginx HTTPS disiapkan di host melalui konfigurasi contoh; bukan container Compose. Monitoring eksternal tidak diperlukan oleh command ini dan belum disediakan repository.
 
-Runbook ini digunakan untuk menyiapkan, memverifikasi, menjalankan, memulihkan, dan menutup lingkungan demo. Ini bukan runbook production dan tidak menetapkan SLA/RPO/RTO.
+Operasi lokal menggunakan `.env` serta `scripts/dev-services.sh`; operasi Compose menggunakan `ENV_FILE` default `.env.vps`. Jangan mencampur hostname layanan Compose (`postgres`, `redis`, `minio`) dengan endpoint lokal host.
 
-Command di bawah adalah kontrak target implementasi. Jika wrapper seperti `make` atau script deployment belum tersedia, command tersebut harus dibuat pada milestone M6 sebelum rehearsal final.
-
----
-
-## 2. Komponen
-
-| Service | Wajib | Persisten |
-|---|:---:|:---:|
-| Reverse proxy/HTTPS | Ya untuk VPS | Konfigurasi |
-| Django web | Ya | Tidak |
-| Scheduler/reconciliation | Ya | Tidak |
-| Optimization worker | Ya | Tidak |
-| Document worker | Ya | Tidak |
-| PostgreSQL | Ya | Ya |
-| Redis broker | Ya | Tidak canonical |
-| MinIO private storage | Ya | Ya |
-| OTel/Prometheus/Grafana | Direkomendasikan | Metrics sesuai retention demo |
-
-Hanya reverse proxy membuka port publik. PostgreSQL, Redis, dan MinIO berada pada private Compose network.
-
----
-
-## 3. Required Inputs
-
-Operator harus memiliki:
-
-- release commit/tag dan image version yang akan didemokan;
-- file environment pada VPS dengan permission minimum;
-- credential Admin, Staff, dan Manager melalui kanal aman;
-- akses SSH/VPS dan akses backup sesuai kewenangan;
-- domain/TLS yang valid bila memakai VPS;
-- salinan runbook dan demo scenario;
-- waktu maintenance di luar sesi demo.
-
-Jangan menempelkan secret ke chat, ticket publik, screenshot, shell history, atau dokumen ini.
-
----
-
-## 4. Environment Safety
-
-Sebelum migration, reset, restore, atau seed:
-
-1. verifikasi hostname dan environment label;
-2. pastikan `APP_ENV=demo`;
-3. pastikan database dan bucket menunjuk target demo;
-4. pastikan tidak ada production endpoint/credential;
-5. catat release dan backup terakhir.
-
-`reset_demo_data` wajib menolak berjalan bila environment bukan demo dan mewajibkan token konfirmasi eksplisit `DEMO_ONLY`. Reset tidak dijalankan saat audiens menggunakan aplikasi.
-
----
-
-## 5. Initial Setup atau Release
-
-### 5.1 Preflight Source
+## 2. Setup development host
 
 ```bash
-git status --short
-docker compose config --quiet
-docker compose build
+uv sync --frozen
+cp .env.example .env
 ```
 
-Working tree untuk release harus diketahui. Jangan membuang perubahan lokal secara destruktif. Image yang diuji harus sama dengan image yang dijalankan saat demo.
-
-### 5.2 Start Infrastructure
+Isi connection/credential serta tiga DEMO password pada `.env`. PostgreSQL dan Redis harus sudah aktif di host; database local/test serta role akses disiapkan operator. `make start` memeriksa dependency host, membuat/menjalankan container `procurement-minio`, memastikan bucket, menjalankan migration, kemudian memulai web/workers/beat.
 
 ```bash
-docker compose up -d postgres redis minio
-docker compose ps
+make start
+make status
+uv run --env-file .env python manage.py seed_demo
 ```
 
-Tunggu health check service, lalu jalankan migration dari image web:
+Web lokal: `http://127.0.0.1:8000`. Log/PID/scheduler file berada di `.run/`. `make stop` menghentikan process yang dikelolanya dan container MinIO lokal; PostgreSQL/Redis host tetap berjalan. `make start` tidak otomatis menjalankan seed.
+
+Untuk smoke/reset pada local settings, command tetap memerlukan `APP_ENV=demo`. Label ini harus sengaja dikonfigurasi untuk dataset demo; `.env.example` tidak mengaktifkannya secara default.
+
+## 3. Setup Compose HTTP lokal
 
 ```bash
-docker compose run --rm web python manage.py migrate --noinput
-docker compose run --rm web python manage.py check
-docker compose run --rm web python manage.py makemigrations --check --dry-run
+cp .env.demo.example .env.demo
 ```
 
-### 5.3 Seed
-
-Target command:
+Isi seluruh placeholder/credential/password. Example ini menonaktifkan secure cookies/redirect agar demo HTTP loopback dapat berjalan; gunakan example VPS untuk deployment HTTPS.
 
 ```bash
-docker compose run --rm web python manage.py seed_demo
+make docker-start ENV_FILE=.env.demo
+make docker-status ENV_FILE=.env.demo
+make docker-seed ENV_FILE=.env.demo
+make docker-smoke ENV_FILE=.env.demo
 ```
 
-Command harus idempotent dan menghasilkan/memverifikasi golden dataset pada `08-demo-implementation-plan.md`. Password berasal dari environment atau output one-time yang tidak masuk log permanen.
+Seluruh target `docker-*` menerima `ENV_FILE`; gunakan file yang sama pada start, status, seed, reset, smoke, backup, dan stop.
 
-### 5.4 Start Application
+## 4. Setup VPS HTTPS
 
 ```bash
-docker compose up -d web scheduler worker-optimization worker-documents
-docker compose ps
+cp .env.vps.example .env.vps
+chmod 600 .env.vps
 ```
 
-Jika observability dipakai:
+Isi domain, secret, database URL, broker/cache, MinIO, dan tiga DEMO password. `MINIO_ROOT_USER/PASSWORD` harus sesuai `MINIO_ACCESS_KEY/SECRET_KEY` pada konfigurasi demo ini. Contoh memakai TLS di Nginx dan `MINIO_SECURE=false` untuk koneksi MinIO internal Compose.
 
 ```bash
-docker compose up -d otel-collector prometheus grafana
+make docker-preflight-vps
+make docker-start
+make docker-status
+make docker-seed
 ```
 
----
+`docker-start` menjalankan Compose config preflight, bukan otomatis VPS security preflight. Jalankan `docker-preflight-vps` terpisah untuk VPS: script memeriksa required values, placeholder, APP_ENV/settings, HTTPS base/origins, secure flags, panjang secret/password, loopback bind, HSTS, dan permission file.
 
-## 6. Release Verification
+Sesuaikan `deploy/nginx-procurement.conf.example` dengan domain dan `WEB_HOST_PORT` (example VPS 8002). Konfigurasi awal HTTP mendukung certificate issuance; terbitkan TLS dan aktifkan HTTPS redirect sebelum akses publik. `config.settings.demo` mempercayai forwarded HTTPS header dari proxy; web harus tetap dibatasi loopback sesuai example.
 
-### 6.1 Automated Checks
+Web container otomatis migrate dan collectstatic sebelum Gunicorn. `minio-init` membuat bucket, tanpa mengaktifkan object versioning. Dockerfile memasang dependency renderer/font, dan worker/scheduler menunggu health web. Stack tidak menyediakan backup/restore otomatis atau high availability.
 
-Pada CI atau environment test yang sesuai:
+## 5. Verifikasi release
+
+Automated checks pada test environment dijelaskan dalam [09 — Test Plan](09-demo-test-plan.md). Pada container demo:
 
 ```bash
-python manage.py test
-python manage.py check --deploy --settings=config.settings.demo
+docker compose --env-file .env.vps exec web python manage.py check --deploy
+docker compose --env-file .env.vps exec web python manage.py showmigrations
+docker compose --env-file .env.vps exec web python manage.py makemigrations --check --dry-run
+make docker-smoke
 ```
 
-Jangan menjalankan destructive test suite terhadap database demo yang berisi rehearsal record.
+`make docker-smoke` menjalankan tiga service flow dan membuat record baru pada setiap pengulangan. Seed telah menyediakan manual VALID A60+B40 sebagai alternatif, tanpa selection atau PDF otomatis.
 
-### 6.2 Health
+Endpoint:
 
-Verifikasi:
+- `/health/live/`: process liveness.
+- `/health/ready/`: PostgreSQL connection dan migration readiness saja.
+- `/metrics/`: HTTP in-process metrics, DB row count per job status, dan umur PENDING tertua.
 
-- `/health/live/` sukses;
-- `/health/ready/` sukses;
-- web dapat membaca PostgreSQL;
-- kedua worker memiliki heartbeat dan mengonsumsi queue yang benar;
-- scheduler aktif;
-- MinIO bucket privat dapat ditulis/dibaca aplikasi;
-- disk masih memiliki ruang yang memadai;
-- waktu server tersinkronisasi.
+Periksa Redis/MinIO/worker/scheduler secara terpisah melalui status/log dan smoke. Health web sukses tidak membuktikan semua dependency tersebut sehat. Tidak ada operational dashboard atau Telegram alert yang otomatis berjalan.
 
-### 6.3 Functional Smoke Test
+## 6. Seed dan reset
 
-1. Login sebagai Staff.
-2. Buka Tender canonical.
-3. Jalankan optimizer smoke atau lihat run terbaru dari build sama.
-4. Pastikan rank 1 Rp663 juta.
-5. Buat Bid margin 15% dan pastikan Rp780 juta/feasible.
-6. Approve/sign menggunakan Manager.
-7. Finalize dan download PDF.
-8. Verifikasi PDF dapat dibuka dan checksum metadata tersedia.
+`seed_demo` wajib tiga password env dan tidak mencetak/generate password. User canonical dibuat/diverifikasi/diperbarui; business data diverifikasi dan mismatch ditolak. Offer canonical berlaku 2026–2030. Command seed sendiri tidak membatasi APP_ENV; operator harus memilih target dengan benar.
 
-Setelah smoke test, reset ke pre-demo state atau gunakan dataset khusus rehearsal yang jelas.
-
----
-
-## 7. Demo-Day Timeline
-
-### T-24 Jam
-
-- freeze release candidate;
-- jalankan seluruh `09-demo-test-plan.md`;
-- buat backup PostgreSQL dan MinIO;
-- rehearsal primary flow dan fallback;
-- cek TLS, disk, memory, dan alert;
-- siapkan PDF/run cadangan dari release yang sama.
-
-### T-60 Menit
-
-- verifikasi VPS dan network;
-- cek `docker compose ps`;
-- cek worker heartbeat, queue depth, oldest PENDING job;
-- cek MinIO dan PostgreSQL;
-- reset/seed data demo jika diperlukan;
-- buka browser profile Staff dan Manager secara terpisah.
-
-### T-15 Menit
-
-- hentikan perubahan/deployment;
-- pastikan tidak ada active run/job yang tidak diharapkan;
-- cek zoom/proyektor;
-- tutup tab admin, console, log, dan terminal sensitif;
-- pastikan presenter mengikuti `10-demo-scenario.md`.
-
-### Setelah Demo
-
-- catat outcome dan incident;
-- simpan audit/screenshot yang memang diizinkan;
-- backup bila data demo perlu dipertahankan;
-- revoke credential sementara;
-- matikan environment bila tidak perlu aktif.
-
----
-
-## 8. Reset Demo Data
-
-Target command:
+Reset/smoke memerlukan `APP_ENV=demo`. Reset memerlukan token tepat:
 
 ```bash
-docker compose run --rm web python manage.py reset_demo_data --confirm DEMO_ONLY
-docker compose run --rm web python manage.py seed_demo
+make docker-reset
+make docker-seed
 ```
 
-Reset command harus:
+Reset menargetkan user `demo-admin/staff/manager`, Product `PUMP-001`, suppliers `SUP-A..C`, offers `DEMO-OFFER-A..C`, Tender `DEMO-TENDER-001`, serta workflow turunannya. Notifikasi recipient demo dan audit actor/entity demo juga dihapus. Penghapusan DB dilakukan langsung untuk melewati immutable guards pada command khusus ini, lalu object signature/PDF yang tercatat dibersihkan.
 
-- memverifikasi `APP_ENV=demo`;
-- hanya menargetkan dataset demo berdasarkan stable seed namespace;
-- tidak memakai broad filesystem/database deletion;
-- tidak menghapus migration history;
-- tidak menghapus object di luar prefix demo;
-- menulis ringkasan jumlah row/object yang dihapus;
-- dapat dilanjutkan dengan seed idempotent.
+Migration history, document-number sequence tahunan, data unrelated, dan object yang tidak tercatat pada dataset tersebut tidak direset. Reset bukan scanner orphan. Bila DB sudah terhapus tetapi object cleanup gagal, command mengembalikan error; periksa MinIO dan object tersisa sebelum rehearsal berikutnya. Jangan reset saat worker masih memproses dataset demo.
 
-Jika command belum diimplementasikan, jangan menggantinya dengan SQL ad hoc saat demo. Gunakan restore database/bucket demo yang sudah diuji.
-
----
-
-## 9. Backup dan Restore
-
-### 9.1 Backup
-
-Backup yang perlu dipasangkan:
-
-- PostgreSQL dump;
-- MinIO objects/version metadata untuk prefix demo;
-- release/image version dan migration state.
-
-Backup harus terenkripsi, disimpan di luar VPS bila perlu bertahan dari kehilangan host, dan tidak mencatat secret di filename/log.
-
-### 9.2 Restore Verification
-
-Restore dianggap berhasil bila:
-
-- migration state cocok dengan image;
-- user dan Tender canonical tersedia;
-- FinalDocument row menunjuk object yang tersedia;
-- size dan SHA-256 cocok;
-- PDF dapat diunduh melalui authorization check;
-- tidak ada job stale yang langsung membuat duplicate outcome.
-
-Restore selalu direhearsal pada target terisolasi sebelum dianggap sebagai fallback demo.
-
----
-
-## 10. Troubleshooting
-
-| Gejala | Pemeriksaan | Tindakan aman |
-|---|---|---|
-| Web tidak ready | PostgreSQL health, migration, settings | Pulihkan dependency; restart web setelah penyebab jelas |
-| Login gagal semua user | DB, account active, cookie/TLS, clock | Verifikasi account dan session config; jangan reset password massal |
-| Optimization PENDING lama | Redis, optimization worker, queue, scheduler | Pastikan worker sehat; biarkan reconciliation republish |
-| Optimization FAILED | safe code dan diagnostic reference | Perbaiki input atau dependency; business retry membuat run baru |
-| Result count 0 | eligible offer/capacity/validity | Gunakan manual valid result atau koreksi data melalui UI |
-| PDF PENDING lama | document worker dan queue | Pulihkan worker; reconciliation republish |
-| PDF FAILED | renderer, asset, MinIO, disk | Retry transient; Bid harus tetap SIGNED |
-| PDF row ada, object hilang | MinIO/object metadata/checksum | Treat as integrity failure; gunakan backup, jangan tandai sukses manual |
-| 403 pada action benar | role, actor, status, object relationship | Koreksi session/data; jangan bypass permission |
-| Angka berbeda | calculation/algorithm version dan seed | Hentikan primary demo jika correctness belum dapat dijelaskan |
-| Disk hampir penuh | volume PostgreSQL/MinIO/log | Hentikan job baru; lakukan cleanup hanya terhadap target terverifikasi |
-
-### Useful Read-Only Checks
+## 7. Backup dan restore
 
 ```bash
-docker compose ps
-docker compose logs --tail=200 web
-docker compose logs --tail=200 worker-optimization
-docker compose logs --tail=200 worker-documents
-docker compose exec web python manage.py showmigrations
+make docker-backup
 ```
 
-Jangan menampilkan log ke audiens. Periksa dan redaksi output sebelum membagikannya karena log dapat membawa identifier bisnis.
+Script hanya menerima environment file dengan `APP_ENV=demo`. Output `backups/demo-<UTC>/` berisi `postgres.dump` (pg_dump custom format), `minio/` (mirror current objects seluruh bucket), `release-commit.txt`, dan `migrations.txt`.
 
----
+Backup belum otomatis terenkripsi, dikirim off-host, atau mengambil seluruh riwayat object versions. DB dump dan object mirror berjalan berurutan, tanpa coordinated snapshot/freeze; jadwalkan saat mutation/jobs berhenti jika membutuhkan pasangan data stabil. Operator menyalin/enkripsi artefak sesuai kebutuhan. Tidak ada restore script/Make target; restore PostgreSQL dan MinIO harus diuji di environment terisolasi, dengan release/migrations yang sesuai.
 
-## 11. Incident Decision
+Verifikasi restore: DB ready, FinalDocument/signature object ada, size/SHA-256 sesuai, authorized download berhasil, dan tidak ada job stale/duplikasi. `smoke_demo` dapat dipakai untuk mengecek alur baru setelah restore.
 
-| Kondisi | Keputusan |
+## 8. Troubleshooting
+
+| Gejala | Perilaku kode dan tindakan operator |
 |---|---|
-| Angka, permission, atau historical integrity salah | Stop demo flow; gunakan penjelasan/fallback yang sudah diverifikasi |
-| Worker transient gagal tetapi record aman | Tunjukkan failure handling lalu gunakan prepared record |
-| PDF tidak dapat diverifikasi | Jangan menyatakan proposal FINALIZED |
-| Credential/secret diduga terekspos | Hentikan screen sharing terkait, rotate credential, catat incident |
-| Data tidak dikenal atau environment salah | Jangan reset/migrate; identifikasi target terlebih dahulu |
+| Web not ready | Periksa PostgreSQL/migration/settings serta log web |
+| Login gagal | Periksa active account, username/password, cache, secure cookies/proxy; rate limit lima failure dalam window 300 detik |
+| Optimization PENDING lama | Pulihkan Redis/optimization worker/scheduler; reconciliation republish PENDING setelah grace 60 detik |
+| Optimization RUNNING stale | Belum ada takeover otomatis. Periksa worker/status dan gunakan prepared result atau dataset demo baru setelah diagnosis; jangan menganggap republish PENDING menyelesaikan kasus ini |
+| Optimization FAILED | Lihat safe code/diagnostic reference; Staff retry membuat run baru atas input terbaru |
+| COMPLETED result count 0 | Periksa eligibility/quantity; sediakan Offer yang dapat memenuhi kebutuhan atau manual result valid |
+| PDF PENDING lama | Periksa document queue/worker/scheduler; reconciliation republish |
+| PDF RUNNING stale | Reconciliation memeriksa uploaded object setelah 120 detik default; complete object valid atau release/republish |
+| PDF FAILED | Task normal maksimal tiga attempt; pulihkan renderer/storage lalu Staff meminta dokumen lagi untuk job/version baru |
+| Regeneration PDF gagal | Bid tetap FINALIZED dan versi PDF lama tetap dapat diunduh |
+| PDF object hilang/corrupt | Download ditolak integrity/storage guard; pulihkan pasangan backup yang sesuai |
+| 403 | Periksa role/session; hanya approving Manager boleh sign; Admin tidak boleh download bisnis |
 
----
+Read-only checks:
 
-## 12. Rollback Release
+```bash
+make docker-status
+docker compose --env-file .env.vps logs --tail=200 web worker-optimization worker-documents scheduler
+docker compose --env-file .env.vps exec web python manage.py showmigrations
+```
 
-Rollback hanya dilakukan ke image yang kompatibel dengan migration saat ini. Jangan menjalankan reverse migration secara spontan pada demo environment yang berisi data.
+Jangan mengubah state Bid atau checksum secara manual untuk menyatakan job sukses. Gunakan fallback yang memang telah diverifikasi saat rehearsal.
 
-Urutan aman:
+## 9. Persiapan presentasi dan shutdown
 
-1. hentikan mutation/background worker bila diperlukan;
-2. catat image dan migration state;
-3. verifikasi compatibility release sebelumnya;
-4. deploy image sebelumnya;
-5. jalankan health dan functional smoke check;
-6. lanjutkan hanya jika snapshot/document compatibility terbukti.
+1. Catat commit/image/migration dan jalankan checks serta smoke pada target demo.
+2. Bila perlu reset setelah smoke, hentikan aktivitas dataset, reset/seed ulang, lalu siapkan prepared run/PDF melalui workflow biasa.
+3. Gunakan browser Staff dan Manager terpisah; uji proyektor, keyboard, desktop/mobile, dan PDF.
+4. Ikuti [10 — Demo Scenario](10-demo-scenario.md). Halaman audit timeline belum tersedia; gunakan revision/job/history metadata yang ada.
+5. Backup data yang diperlukan sebelum/selepas presentasi; catat outcome dan masalah aktual.
 
-Jika schema tidak backward compatible, gunakan restore pasangan PostgreSQL/MinIO yang dibuat sebelum release pada environment terisolasi.
+```bash
+make docker-logs
+make docker-stop
+```
 
----
-
-## 13. Ready-to-Demo Checklist
-
-- [ ] Release/image dan commit tercatat.
-- [ ] Migration tidak tertunda.
-- [ ] Seluruh P0 automated test lulus.
-- [ ] Web, scheduler, workers, PostgreSQL, Redis, dan MinIO sehat.
-- [ ] Golden dataset menghasilkan Rp663 juta dan Bid Rp780 juta.
-- [ ] Staff dan Manager login melalui browser profile terpisah.
-- [ ] Optimizer dan PDF smoke test berhasil.
-- [ ] Queue tidak memiliki stale job.
-- [ ] Backup terbaru tersedia dan restore pernah diuji.
-- [ ] Prepared run/PDF fallback berasal dari release dan data yang sama.
-- [ ] Tidak ada secret pada tab, terminal, slide, atau dokumen yang ditampilkan.
-- [ ] Presenter sudah rehearsal primary flow.
-
+Compose down mempertahankan named data volumes. Rollback image harus kompatibel dengan migration/snapshot saat ini; restore pasangan DB/storage di target terisolasi bila schema tidak kompatibel. Tidak ada deployment rollback automation checked-in.
