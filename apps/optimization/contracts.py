@@ -43,6 +43,15 @@ class CandidateRejection:
 
 
 @dataclass(frozen=True)
+class OptimizationStats:
+    explored_vectors: int
+    valid_candidates_discovered: int
+    rejected_candidates_discovered: int
+    exploration_limit_reached: bool
+
+
+@dataclass(frozen=True)
 class OptimizationOutcome:
     candidates: tuple[OptimizationCandidate, ...]
     rejections: tuple[CandidateRejection, ...]
+    stats: OptimizationStats = OptimizationStats(0, 0, 0, False)

@@ -15,5 +15,6 @@ celerybeat-schedule*
 # Local process manager state and logs
 .run/
 backups/
+benchmark-results/
 .env.demo
 .env.vps

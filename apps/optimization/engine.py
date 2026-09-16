@@ -15,6 +15,7 @@ from .contracts import (
     CandidateRejection,
     OptimizationCandidate,
     OptimizationOutcome,
+    OptimizationStats,
 )
 
 ALGORITHM_VERSION = "greedy-bounded-v1"
@@ -215,6 +216,14 @@ def optimize(
     return OptimizationOutcome(
         candidates=tuple(ranked),
         rejections=tuple(rejections.values()),
+        stats=OptimizationStats(
+            explored_vectors=explored,
+            valid_candidates_discovered=len(candidates),
+            rejected_candidates_discovered=len(rejections),
+            exploration_limit_reached=(
+                bool(pending) and explored >= exploration_limit
+            ),
+        ),
     )
 
 

@@ -31,6 +31,7 @@ Dokumen ini memetakan suite yang benar-benar tersedia dan pemeriksaan manual yan
 | `apps.sourcing.tests` | Harga net, discount 100% ineligible, date/master eligibility, Offer correction/supersede/identity/version, views |
 | `apps.sourcing.test_results` | Allocation rounding/quantity/product/capacity, validation, live inactive Offer, corrupt price snapshot, VALID immutability, customization, selection/selection race, historic display |
 | `apps.optimization.test_engine` | Golden candidate, capacity shortage rejection, supplier-count tie break, dan candidate identifier independen dari urutan allocation |
+| `apps.optimization.test_benchmark` | Dataset sintetis seeded, determinisme checksum, shared validation, schema report, dan guard supported workload |
 | `apps.optimization.tests` | Frozen input setelah deactivation, penolakan run aktif kedua, ranked result persistence, duplicate delivery, failed/retry run, notifications, role dan status/detail views |
 | `apps.bids.tests` | Golden margin/HPS pricing, selected-result requirement, create/price/submit/version, material immutability, rejection/revision, waiting/decision notifications, views |
 | `apps.approval.tests` | Decision immutability dan concurrent decision race menghasilkan satu row |
@@ -42,6 +43,9 @@ Dokumen ini memetakan suite yang benar-benar tersedia dan pemeriksaan manual yan
 | `config.tests` | PostgreSQL/env parsing, correlation middleware, health/metrics/JSON log formatting |
 
 Kasus input-limit/timeout optimizer, PENDING publish recovery, repeated-product optimizer, invalid-image matrix, reset storage cleanup failure, dan document-task retry/backoff belum mempunyai test khusus dalam suite saat ini. Jangan menganggap seluruh behavior service otomatis tercakup.
+
+Suite saat ini berisi 248 test. Benchmark waktu tidak menjadi assertion unit
+test karena hasil bergantung pada mesin dan beban host.
 
 Tidak ada generic idempotency-key replay/conflict test karena fiturnya tidak ada. Tidak ada signature-profile replacement test, general orphan scanner test, atau Grafana/Telegram E2E. Rehearsal layanan nyata tetap terpisah dari test eager/mocked.
 
@@ -89,7 +93,32 @@ uv run --env-file .env.vps python manage.py check --deploy --settings=config.set
 
 Check ini memeriksa settings Django; bukan pengganti HTTPS, database, queue, dan storage rehearsal pada stack target. Jika hostname layanan Compose tidak dapat dijangkau host, jalankan pemeriksaan runtime dari container.
 
-## 6. Rehearsal layanan nyata
+## 6. Benchmark optimizer
+
+Benchmark engine-only menggunakan dataset sintetis deterministik dan tidak
+membaca database atau broker:
+
+```bash
+uv run python manage.py benchmark_optimizer \
+    --items 100 \
+    --offers-per-item 50 \
+    --seed 42 \
+    --warmups 2 \
+    --runs 10
+```
+
+Gunakan `--format json` untuk artefak machine-readable. Report mencatat versi
+algoritma/runtime, commit dan status working tree, parameter workload, durasi
+per run, median, p95, standard deviation, coefficient of variation, peak
+alokasi Python, jumlah skip-vector yang dieksplorasi, kandidat ditemukan dan
+ditolak, jumlah result, checksum, serta status shared validation.
+
+Durasi hanya mengukur engine. Shared validation dijalankan setelah timer.
+Pengukuran memori memakai `tracemalloc` dalam run terpisah dan dilabeli sebagai
+peak Python allocation, bukan total process RSS. Batas command mengikuti
+supported workload aplikasi: maksimal 100 item dan 50 Offer per item.
+
+## 7. Rehearsal layanan nyata
 
 Pada Compose demo yang sudah sehat dan di-seed:
 
@@ -110,7 +139,7 @@ Periksa juga melalui UI:
 7. Pulihkan broker/worker yang berhenti dan periksa PENDING reconciliation. Untuk optimization RUNNING stale, jangan mengasumsikan recovery otomatis.
 8. Periksa regeneration gagal tetap mempertahankan PDF final lama; uji restore backup di environment terisolasi.
 
-## 7. Pemeriksaan visual/manual
+## 8. Pemeriksaan visual/manual
 
 - Login normal/error, dashboard authenticated, profil dengan nama/email panjang.
 - Desktop/mobile sampai 320px, keyboard navigation dan visible focus.
