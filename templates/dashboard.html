@@ -9,60 +9,92 @@
         <h1>Halo, {{ user.full_name }}.</h1>
         <p>Pilih area kerja untuk memulai aktivitas pengadaan.</p>
     </div>
-    <span class="status-badge">{{ user.get_role_display }}</span>
+    <span class="role-badge">{{ user.get_role_display }}</span>
 </div>
 
 <section class="module-grid" aria-label="Modul procurement">
     {% if user.role == "ADMIN" %}
-        <a class="card module-card module-link"
+        <a class="card module-card module-card-primary module-link"
            href="{% url 'catalog:product-list' %}">
-            <span class="module-icon" aria-hidden="true">PR</span>
+            <span class="module-icon" aria-hidden="true">
+                {% include "components/icon.html" with name="product" %}
+            </span>
             <h2>Produk</h2>
             <p>Kelola katalog dan spesifikasi produk medis.</p>
         </a>
-        <a class="card module-card module-link"
+        <a class="card module-card module-card-quiet module-link"
            href="{% url 'catalog:supplier-list' %}">
-            <span class="module-icon" aria-hidden="true">SP</span>
+            <span class="module-icon" aria-hidden="true">
+                {% include "components/icon.html" with name="supplier" %}
+            </span>
             <h2>Supplier</h2>
             <p>Simpan profil dan informasi pemasok tepercaya.</p>
         </a>
     {% elif user.role == "PROCUREMENT_STAFF" %}
-        <a class="card module-card module-link"
+        <a class="card module-card module-card-primary module-link"
            href="{% url 'tender:list' %}">
-            <span class="module-icon" aria-hidden="true">TR</span>
+            <span class="module-icon" aria-hidden="true">
+                {% include "components/icon.html" with name="tender" %}
+            </span>
             <h2>Pengadaan</h2>
             <p>Catat kebutuhan instansi dalam revision yang terlacak.</p>
+            <span class="module-meta">Snapshot kebutuhan · Riwayat revision</span>
         </a>
-        <a class="card module-card module-link"
+        <a class="card module-card module-card-quiet module-link"
            href="{% url 'sourcing:offer-list' %}">
-            <span class="module-icon" aria-hidden="true">QT</span>
+            <span class="module-icon" aria-hidden="true">
+                {% include "components/icon.html" with name="offer" %}
+            </span>
             <h2>Penawaran</h2>
             <p>Bandingkan harga, diskon, dan kapasitas supplier.</p>
         </a>
-        <a class="card module-card module-link"
+        <a class="card module-card module-card-quiet module-link"
            href="{% url 'sourcing:result-list' %}">
-            <span class="module-icon" aria-hidden="true">RS</span>
+            <span class="module-icon" aria-hidden="true">
+                {% include "components/icon.html" with name="result" %}
+            </span>
             <h2>Procurement Result</h2>
             <p>Susun, validasi, bandingkan, dan pilih alternatif sourcing.</p>
         </a>
-        <a class="card module-card module-link"
+        <a class="card module-card {% if active_optimization_count %}module-card-attention{% else %}module-card-quiet{% endif %} module-link"
            href="{% url 'optimization:run-list' %}">
-            <span class="module-icon" aria-hidden="true">OP</span>
+            <span class="module-icon" aria-hidden="true">
+                {% include "components/icon.html" with name="optimization" %}
+            </span>
             <h2>Optimization</h2>
             <p>Jalankan optimizer dan tinjau rekomendasi terurut.</p>
+            {% if active_optimization_count %}
+                <span class="module-signal"><strong>{{ active_optimization_count }}</strong> proses aktif</span>
+            {% else %}
+                <span class="module-meta">Tidak ada proses berjalan</span>
+            {% endif %}
         </a>
-        <a class="card module-card module-link"
+        <a class="card module-card {% if rejected_bid_count %}module-card-attention{% else %}module-card-primary{% endif %} module-link"
            href="{% url 'bids:list' %}">
-            <span class="module-icon" aria-hidden="true">BD</span>
+            <span class="module-icon" aria-hidden="true">
+                {% include "components/icon.html" with name="bid" %}
+            </span>
             <h2>Bid Proposal</h2>
             <p>Kelola pricing, approval, dan dokumen final proposal.</p>
+            {% if rejected_bid_count %}
+                <span class="module-signal"><strong>{{ rejected_bid_count }}</strong> perlu direvisi</span>
+            {% else %}
+                <span class="module-meta">Approval · Signature · PDF final</span>
+            {% endif %}
         </a>
     {% elif user.role == "MANAGER" %}
-        <a class="card module-card module-link"
+        <a class="card module-card {% if pending_approval_count %}module-card-attention{% else %}module-card-primary{% endif %} module-link"
            href="{% url 'approval:queue' %}">
-            <span class="module-icon" aria-hidden="true">AP</span>
+            <span class="module-icon" aria-hidden="true">
+                {% include "components/icon.html" with name="approval" %}
+            </span>
             <h2>Persetujuan</h2>
             <p>Tinjau, putuskan, dan tandatangani proposal pengadaan.</p>
+            {% if pending_approval_count %}
+                <span class="module-signal"><strong>{{ pending_approval_count }}</strong> menunggu keputusan</span>
+            {% else %}
+                <span class="module-meta">Antrean keputusan sudah bersih</span>
+            {% endif %}
         </a>
     {% endif %}
 </section>

@@ -14,19 +14,19 @@
 <section class="card table-card">
     <div class="table-wrap">
         <table class="data-table">
-            <thead><tr><th>Nomor</th><th>Tender</th><th>Status</th><th>Total bid</th><th>HPS</th><th>Aksi</th></tr></thead>
+            <thead><tr><th>Nomor</th><th>Tender</th><th>Status</th><th class="numeric-cell">Total bid</th><th>HPS</th><th>Aksi</th></tr></thead>
             <tbody>
                 {% for revision in revisions %}
                     <tr>
                         <td>{{ revision.bid_proposal.proposal_number }} · R{{ revision.revision_number }}</td>
                         <td>{{ revision.bid_proposal.tender_request.internal_code }}</td>
-                        <td>{{ revision.get_status_display }}</td>
-                        <td>{{ revision.total_bid_value|idr }}</td>
+                        <td><span class="status-badge {{ revision.status|status_class }}">{{ revision.get_status_display }}</span></td>
+                        <td class="numeric-cell">{{ revision.total_bid_value|idr }}</td>
                         <td>{% if revision.is_hps_feasible is None %}Tidak tersedia{% elif revision.is_hps_feasible %}Memenuhi{% else %}Melebihi{% endif %}</td>
                         <td><a href="{% url 'approval:detail' revision.pk %}">{% if revision.status == "APPROVED" %}Lanjut tanda tangan{% else %}Tinjau dan putuskan{% endif %}</a></td>
                     </tr>
                 {% empty %}
-                    <tr><td class="empty-cell" colspan="6">Tidak ada Bid yang menunggu tindakan Anda.</td></tr>
+                    <tr><td class="empty-cell" colspan="6"><div class="empty-state"><span class="empty-state-mark" aria-hidden="true">AP</span><strong>Antrean keputusan sudah bersih</strong><p>Belum ada Bid baru yang memerlukan review atau signature Anda.</p></div></td></tr>
                 {% endfor %}
             </tbody>
         </table>

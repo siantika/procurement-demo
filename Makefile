@@ -1,7 +1,11 @@
 SHELL := /bin/bash
-ENV_FILE ?= .env.vps
+ENV_FILE ?= .env
 export ENV_FILE
-COMPOSE = docker compose --env-file "$(ENV_FILE)"
+COMPOSE_FILES = -f compose.yaml
+ifeq ($(ENV_FILE),.env)
+COMPOSE_FILES += -f compose.local.yaml
+endif
+COMPOSE = docker compose $(COMPOSE_FILES) --env-file "$(ENV_FILE)"
 
 .PHONY: start stop restart status logs check docker-start docker-stop \
 	docker-restart docker-status docker-logs docker-seed docker-reset \
@@ -29,7 +33,7 @@ check:
 
 docker-preflight:
 	@test -f "$(ENV_FILE)" || \
-		(echo "File environment deployment tidak ditemukan: $(ENV_FILE)" && false)
+		(echo "File environment tidak ditemukan: $(ENV_FILE)" && false)
 	@$(COMPOSE) config --quiet
 
 docker-preflight-vps: docker-preflight

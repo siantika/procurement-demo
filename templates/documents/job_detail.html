@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load procurement_format %}
 
 {% block title %}Dokumen {{ job.input_snapshot.document.document_number }} · Procurement ERP{% endblock %}
 
@@ -27,18 +28,25 @@
          data-status-url="{% url 'documents:job-status' job.pk %}"
          data-terminal="{% if job.status == 'COMPLETED' or job.status == 'FAILED' %}true{% else %}false{% endif %}">
     <dl class="detail-grid">
-        <div><dt>Status job</dt><dd><span class="status-badge" data-job-status>{{ job.get_status_display }}</span></dd></div>
+        <div><dt>Status job</dt><dd><span class="status-badge {{ job.status|status_class }}" data-job-status>{{ job.get_status_display }}</span></dd></div>
         <div><dt>Status Bid</dt><dd>{{ job.bid_revision.get_status_display }}</dd></div>
-        <div><dt>Document version</dt><dd>{{ job.document_version }}</dd></div>
+        <div><dt>Document version</dt><dd class="numeric-value">{{ job.document_version }}</dd></div>
         <div><dt>Template</dt><dd>PDF v{{ job.template_version }}</dd></div>
-        <div><dt>Attempt</dt><dd>{{ job.attempt_count }}</dd></div>
+        <div><dt>Attempt</dt><dd class="numeric-value">{{ job.attempt_count }}</dd></div>
         <div><dt>Diminta oleh</dt><dd>{{ job.requested_by.full_name }}</dd></div>
-        <div><dt>Input hash</dt><dd class="hash-value">{{ job.input_hash }}</dd></div>
         {% if job.status == "COMPLETED" %}
-            <div><dt>Checksum PDF</dt><dd class="hash-value">{{ job.final_document.sha256 }}</dd></div>
-            <div><dt>Ukuran</dt><dd>{{ job.final_document.size_bytes }} byte</dd></div>
+            <div><dt>Integrity check</dt><dd>Terverifikasi</dd></div>
+            <div><dt>Ukuran</dt><dd class="numeric-value">{{ job.final_document.size_bytes }} byte</dd></div>
         {% endif %}
     </dl>
+</section>
+<section class="integrity-panel" aria-labelledby="document-integrity-title">
+    <span class="integrity-seal" aria-hidden="true">SHA-256</span>
+    <div>
+        <strong id="document-integrity-title">{% if job.status == "COMPLETED" %}PDF privat lolos pemeriksaan integritas{% else %}Input dokumen terkunci selama proses{% endif %}</strong>
+        <p>{% if job.status == "COMPLETED" %}Checksum diverifikasi kembali sebelum file diberikan untuk diunduh.{% else %}Worker memproses snapshot yang sama meskipun task dikirim ulang.{% endif %}</p>
+        <span class="hash-value">{% if job.status == "COMPLETED" %}{{ job.final_document.sha256 }}{% else %}{{ job.input_hash }}{% endif %}</span>
+    </div>
 </section>
 
 <div class="form-actions content-section">

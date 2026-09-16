@@ -9,7 +9,10 @@
 
 Runbook menggunakan command yang sudah ada. Compose demo menjalankan PostgreSQL, Redis, MinIO/bucket init, Django web, optimization worker, document worker, dan Celery beat. Nginx HTTPS disiapkan di host melalui konfigurasi contoh; bukan container Compose. Monitoring eksternal tidak diperlukan oleh command ini dan belum disediakan repository.
 
-Operasi lokal menggunakan `.env` serta `scripts/dev-services.sh`; operasi Compose menggunakan `ENV_FILE` default `.env.vps`. Jangan mencampur hostname layanan Compose (`postgres`, `redis`, `minio`) dengan endpoint lokal host.
+Semua operasi lokal menggunakan `.env`. `compose.local.yaml` otomatis
+mengganti endpoint host menjadi service Compose (`postgres`, `redis`, dan
+`minio`) ketika target `make docker-*` lokal dijalankan. Operasi Compose di VPS
+menggunakan `.env.vps` melalui override `ENV_FILE=.env.vps`.
 
 ## 2. Setup development host
 
@@ -32,20 +35,22 @@ Untuk smoke/reset pada local settings, command tetap memerlukan `APP_ENV=demo`. 
 
 ## 3. Setup Compose HTTP lokal
 
+Gunakan `.env` yang sama dengan development host dan isi seluruh
+placeholder/credential/password. Override lokal menjalankan settings demo,
+menggunakan credential database internal khusus development, serta
+menonaktifkan secure cookies/redirect untuk HTTP loopback. Gunakan example VPS
+untuk deployment HTTPS.
+
 ```bash
-cp .env.demo.example .env.demo
+make docker-start
+make docker-status
+make docker-seed
+make docker-smoke
 ```
 
-Isi seluruh placeholder/credential/password. Example ini menonaktifkan secure cookies/redirect agar demo HTTP loopback dapat berjalan; gunakan example VPS untuk deployment HTTPS.
-
-```bash
-make docker-start ENV_FILE=.env.demo
-make docker-status ENV_FILE=.env.demo
-make docker-seed ENV_FILE=.env.demo
-make docker-smoke ENV_FILE=.env.demo
-```
-
-Seluruh target `docker-*` menerima `ENV_FILE`; gunakan file yang sama pada start, status, seed, reset, smoke, backup, dan stop.
+Seluruh target `docker-*` memakai `.env` secara default. Override `ENV_FILE`
+hanya diperlukan untuk VPS atau konfigurasi lain; gunakan file yang sama pada
+start, status, seed, reset, smoke, backup, dan stop.
 
 ## 4. Setup VPS HTTPS
 
@@ -57,10 +62,10 @@ chmod 600 .env.vps
 Isi domain, secret, database URL, broker/cache, MinIO, dan tiga DEMO password. `MINIO_ROOT_USER/PASSWORD` harus sesuai `MINIO_ACCESS_KEY/SECRET_KEY` pada konfigurasi demo ini. Contoh memakai TLS di Nginx dan `MINIO_SECURE=false` untuk koneksi MinIO internal Compose.
 
 ```bash
-make docker-preflight-vps
-make docker-start
-make docker-status
-make docker-seed
+make docker-preflight-vps ENV_FILE=.env.vps
+make docker-start ENV_FILE=.env.vps
+make docker-status ENV_FILE=.env.vps
+make docker-seed ENV_FILE=.env.vps
 ```
 
 `docker-start` menjalankan Compose config preflight, bukan otomatis VPS security preflight. Jalankan `docker-preflight-vps` terpisah untuk VPS: script memeriksa required values, placeholder, APP_ENV/settings, HTTPS base/origins, secure flags, panjang secret/password, loopback bind, HSTS, dan permission file.
@@ -77,7 +82,7 @@ Automated checks pada test environment dijelaskan dalam [09 — Test Plan](09-de
 docker compose --env-file .env.vps exec web python manage.py check --deploy
 docker compose --env-file .env.vps exec web python manage.py showmigrations
 docker compose --env-file .env.vps exec web python manage.py makemigrations --check --dry-run
-make docker-smoke
+make docker-smoke ENV_FILE=.env.vps
 ```
 
 `make docker-smoke` menjalankan tiga service flow dan membuat record baru pada setiap pengulangan. Seed telah menyediakan manual VALID A60+B40 sebagai alternatif, tanpa selection atau PDF otomatis.
@@ -97,8 +102,8 @@ Periksa Redis/MinIO/worker/scheduler secara terpisah melalui status/log dan smok
 Reset/smoke memerlukan `APP_ENV=demo`. Reset memerlukan token tepat:
 
 ```bash
-make docker-reset
-make docker-seed
+make docker-reset ENV_FILE=.env.vps
+make docker-seed ENV_FILE=.env.vps
 ```
 
 Reset menargetkan user `demo-admin/staff/manager`, Product `PUMP-001`, suppliers `SUP-A..C`, offers `DEMO-OFFER-A..C`, Tender `DEMO-TENDER-001`, serta workflow turunannya. Notifikasi recipient demo dan audit actor/entity demo juga dihapus. Penghapusan DB dilakukan langsung untuk melewati immutable guards pada command khusus ini, lalu object signature/PDF yang tercatat dibersihkan.
@@ -108,7 +113,7 @@ Migration history, document-number sequence tahunan, data unrelated, dan object 
 ## 7. Backup dan restore
 
 ```bash
-make docker-backup
+make docker-backup ENV_FILE=.env.vps
 ```
 
 Script hanya menerima environment file dengan `APP_ENV=demo`. Output `backups/demo-<UTC>/` berisi `postgres.dump` (pg_dump custom format), `minio/` (mirror current objects seluruh bucket), `release-commit.txt`, dan `migrations.txt`.
@@ -137,7 +142,7 @@ Verifikasi restore: DB ready, FinalDocument/signature object ada, size/SHA-256 s
 Read-only checks:
 
 ```bash
-make docker-status
+make docker-status ENV_FILE=.env.vps
 docker compose --env-file .env.vps logs --tail=200 web worker-optimization worker-documents scheduler
 docker compose --env-file .env.vps exec web python manage.py showmigrations
 ```
@@ -153,8 +158,8 @@ Jangan mengubah state Bid atau checksum secara manual untuk menyatakan job sukse
 5. Backup data yang diperlukan sebelum/selepas presentasi; catat outcome dan masalah aktual.
 
 ```bash
-make docker-logs
-make docker-stop
+make docker-logs ENV_FILE=.env.vps
+make docker-stop ENV_FILE=.env.vps
 ```
 
 Compose down mempertahankan named data volumes. Rollback image harus kompatibel dengan migration/snapshot saat ini; restore pasangan DB/storage di target terisolasi bila schema tidak kompatibel. Tidak ada deployment rollback automation checked-in.

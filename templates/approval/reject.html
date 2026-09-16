@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load procurement_format %}
 
 {% block title %}Tolak Bid · Procurement ERP{% endblock %}
 
@@ -10,12 +11,20 @@
         <p>Alasan akan disimpan dalam histori dan dikirim kepada submitter.</p>
     </div>
 </div>
-<section class="card form-card">
+<section class="card form-card irreversible-action irreversible-action-danger" aria-labelledby="reject-confirmation-title">
+    <div class="irreversible-action-header">
+        <div>
+            <span class="eyebrow">Keputusan permanen · Bid R{{ revision.revision_number }}</span>
+            <h2 id="reject-confirmation-title">Konfirmasi penolakan</h2>
+            <p>Revision ini akan dikunci sebagai ditolak. Alasan menjadi bagian audit trail dan Staff harus membuat revision baru.</p>
+        </div>
+        <span class="decision-mark" aria-hidden="true">REJECT</span>
+    </div>
     <form method="post" action="{% url 'approval:reject' revision.pk %}" class="stack-form" novalidate>
         {% csrf_token %}
         {% include "components/form_fields.html" %}
         <div class="form-actions">
-            <button class="button button-primary" type="submit">Konfirmasi penolakan</button>
+            <button class="button button-danger" type="submit">Tolak Bid R{{ revision.revision_number }}</button>
             <a class="button button-secondary" href="{% url 'bids:detail' revision.bid_proposal.pk %}">Batal</a>
         </div>
     </form>

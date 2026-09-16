@@ -12,15 +12,21 @@
     </div>
 </div>
 
-<section class="card form-card">
-    <div class="section-heading">
-        <h2>Konfirmasi keputusan</h2>
-        <p>Signature bersifat final dan hanya dapat dibuat oleh Manager yang menyetujui proposal.</p>
+<section class="card form-card irreversible-action" aria-labelledby="signature-confirmation-title">
+    <div class="irreversible-action-header">
+        <div>
+            <span class="eyebrow">Tindakan final · Bid R{{ revision.revision_number }}</span>
+            <h2 id="signature-confirmation-title">Konfirmasi signature Manager</h2>
+            <p>Signature mengikat approval ke snapshot submission ini dan tidak dapat diubah setelah dikirim.</p>
+        </div>
+        <span class="decision-mark" aria-hidden="true">SIGN</span>
     </div>
     <div class="workflow-confirmation" role="status">
         <span class="eyebrow">Persetujuan tercatat</span>
         <h2>Bid telah Anda setujui</h2>
-        <p>Nilai {{ revision.total_bid_value|idr }} siap ditandatangani. Setelah dikirim, tanda tangan tidak dapat diubah.</p>
+        <p>{{ revision.bid_proposal.proposal_number }} · keputusan Manager sudah tercatat.</p>
+        <p>Nilai {{ revision.total_bid_value|idr }} · Submission R{{ revision.revision_number }} siap ditandatangani.</p>
+        <p class="hash-value">{{ revision.submission_hash }}</p>
     </div>
     <form method="post" enctype="multipart/form-data" class="stack-form" novalidate>
         {% csrf_token %}
@@ -38,7 +44,7 @@
             {% for error in form.signature_image.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
         </div>
         <div class="form-actions">
-            <button class="button button-primary" type="submit">Tandatangani Bid</button>
+            <button class="button button-primary" type="submit">Tandatangani Bid R{{ revision.revision_number }}</button>
             <a class="button button-secondary" href="{% url 'bids:revision-detail' revision.pk %}">Kembali</a>
         </div>
     </form>

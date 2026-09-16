@@ -5,7 +5,11 @@
 
 {% block content %}
 <div class="page-heading">
-    <div><span class="eyebrow">Tender {{ tender.internal_code }}</span><h1>{{ revision.title }}</h1><p>{{ revision.institution_name }} · Revision {{ revision.revision_number }}</p></div>
+    <div>
+        <span class="eyebrow">Tender {{ tender.internal_code }}</span>
+        <h1>{{ revision.title }}</h1>
+        <p>{{ revision.institution_name }} · <span class="version-badge">Revision aktif R{{ revision.revision_number }}</span></p>
+    </div>
     <div class="form-actions">
         <a class="button button-secondary" href="{% url 'sourcing:result-list' %}?tender={{ tender.pk }}">Lihat result</a>
         <a class="button button-secondary" href="{% url 'sourcing:result-create' %}?revision={{ revision.pk }}">Buat result manual</a>
@@ -19,30 +23,49 @@
 <section class="card detail-card">
     <dl class="detail-grid">
         <div><dt>Referensi</dt><dd>{{ revision.tender_reference_number|default:"—" }}</dd></div>
-        <div><dt>Total HPS</dt><dd>{% if revision.total_hps %}{{ revision.total_hps|idr }}{% else %}Tidak tersedia{% endif %}</dd></div>
+        <div><dt>Total HPS</dt><dd class="numeric-value">{% if revision.total_hps %}{{ revision.total_hps|idr }}{% else %}Tidak tersedia{% endif %}</dd></div>
         <div><dt>Alamat instansi</dt><dd>{{ revision.institution_address|default:"—" }}</dd></div>
-        <div><dt>Content hash</dt><dd class="hash-value">{{ revision.content_hash }}</dd></div>
+        <div><dt>Status data</dt><dd>Snapshot revision terkunci</dd></div>
     </dl>
+</section>
+<section class="integrity-panel" aria-labelledby="tender-integrity-title">
+    <span class="integrity-seal" aria-hidden="true">SHA-256</span>
+    <div>
+        <strong id="tender-integrity-title">Snapshot kebutuhan dapat diverifikasi</strong>
+        <p>Produk, jumlah, spesifikasi, dan HPS pada R{{ revision.revision_number }} disimpan sebagai snapshot yang tidak berubah.</p>
+        <span class="hash-value">{{ revision.content_hash }}</span>
+    </div>
+</section>
+<section class="card version-panel content-section" aria-labelledby="tender-version-title">
+    <div class="section-heading">
+        <span class="eyebrow">Traceability</span>
+        <h2 id="tender-version-title">Jejak revision tender</h2>
+        <p>Setiap titik mewakili snapshot kebutuhan yang dipertahankan untuk audit.</p>
+    </div>
+    <ol class="version-timeline">
+        {% for history in revisions %}
+            <li class="version-item {% if history.pk == revision.pk %}version-item-current{% endif %}">
+                <div class="version-row">
+                    <strong>Revision R{{ history.revision_number }}{% if history.pk == revision.pk %} · Aktif{% endif %}</strong>
+                    <span class="version-meta">{{ history.created_at|date:"d M Y H:i" }}</span>
+                </div>
+                <p class="version-reason">{{ history.revision_reason|default:"Snapshot awal tender" }} · {{ history.created_by.full_name }}</p>
+            </li>
+        {% endfor %}
+    </ol>
 </section>
 <section class="card table-card content-section">
     <div class="section-heading padded-heading"><h2>Riwayat optimization</h2><p>Setiap run memakai snapshot input yang terpisah.</p></div>
     <div class="table-wrap"><table class="data-table">
-        <thead><tr><th>Revision</th><th>Status</th><th>Hasil</th><th>Waktu</th><th>Aksi</th></tr></thead>
-        <tbody>{% for run in optimization_runs %}<tr><td>R{{ run.tender_revision.revision_number }}</td><td><span class="status-badge">{{ run.get_status_display }}</span></td><td>{{ run.result_count }}</td><td>{{ run.created_at|date:"d M Y H:i" }}</td><td><a href="{% url 'optimization:run-detail' run.pk %}">Buka</a></td></tr>{% empty %}<tr><td class="empty-cell" colspan="5">Belum ada Optimization Run.</td></tr>{% endfor %}</tbody>
+        <thead><tr><th class="numeric-cell">Revision</th><th>Status</th><th class="numeric-cell">Hasil</th><th>Waktu</th><th>Aksi</th></tr></thead>
+        <tbody>{% for run in optimization_runs %}<tr><td class="numeric-cell">R{{ run.tender_revision.revision_number }}</td><td><span class="status-badge {{ run.status|status_class }}">{{ run.get_status_display }}</span></td><td class="numeric-cell">{{ run.result_count }}</td><td>{{ run.created_at|date:"d M Y H:i" }}</td><td><a href="{% url 'optimization:run-detail' run.pk %}">Buka</a></td></tr>{% empty %}<tr><td class="empty-cell" colspan="5"><div class="empty-state"><span class="empty-state-mark" aria-hidden="true">OP</span><strong>Belum ada rekomendasi otomatis</strong><p>Jalankan optimizer saat offer supplier sudah siap untuk dibandingkan.</p></div></td></tr>{% endfor %}</tbody>
     </table></div>
 </section>
 <section class="card table-card content-section">
     <div class="section-heading padded-heading"><h2>Item kebutuhan</h2><p>Snapshot produk pada revision aktif.</p></div>
     <div class="table-wrap"><table class="data-table">
-        <thead><tr><th>Baris</th><th>Produk</th><th>Jumlah</th><th>Spesifikasi</th></tr></thead>
-        <tbody>{% for item in revision.items.all %}<tr><td>{{ item.line_number }}</td><td>{{ item.product_snapshot.code }} — {{ item.product_snapshot.name }}</td><td>{{ item.requested_quantity|quantity }} {{ item.unit }}</td><td>{{ item.specification|default:"—" }}</td></tr>{% endfor %}</tbody>
-    </table></div>
-</section>
-<section class="card table-card content-section">
-    <div class="section-heading padded-heading"><h2>Riwayat revision</h2><p>Revision lama tetap tersedia dan tidak berubah.</p></div>
-    <div class="table-wrap"><table class="data-table">
-        <thead><tr><th>Revision</th><th>Alasan</th><th>Dibuat oleh</th><th>Waktu</th></tr></thead>
-        <tbody>{% for history in revisions %}<tr><td>R{{ history.revision_number }}</td><td>{{ history.revision_reason|default:"Revision awal" }}</td><td>{{ history.created_by.full_name }}</td><td>{{ history.created_at|date:"d M Y H:i" }}</td></tr>{% endfor %}</tbody>
+        <thead><tr><th class="numeric-cell">Baris</th><th>Produk</th><th class="numeric-cell">Jumlah</th><th>Spesifikasi</th></tr></thead>
+        <tbody>{% for item in revision.items.all %}<tr><td class="numeric-cell">{{ item.line_number }}</td><td>{{ item.product_snapshot.code }} — {{ item.product_snapshot.name }}</td><td class="numeric-cell">{{ item.requested_quantity|quantity }} {{ item.unit }}</td><td>{{ item.specification|default:"—" }}</td></tr>{% endfor %}</tbody>
     </table></div>
 </section>
 {% endblock %}

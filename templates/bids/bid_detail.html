@@ -8,7 +8,7 @@
     <div>
         <span class="eyebrow">{{ proposal.tender_request.internal_code }} · Bid R{{ revision.revision_number }}</span>
         <h1>{{ proposal.proposal_number }}</h1>
-        <p>{{ revision.tender_revision.institution_name }} · {{ revision.tender_revision.title }}</p>
+        <p>{{ revision.tender_revision.institution_name }} · {{ revision.tender_revision.title }} · <span class="status-badge {{ revision.status|status_class }}">{{ revision.get_status_display }}</span></p>
     </div>
     <div class="form-actions">
         {% if is_current and user.role == "PROCUREMENT_STAFF" %}
@@ -38,18 +38,40 @@
                     <button class="button button-secondary" type="submit">Buat versi PDF baru</button>
                 </form>
             {% endif %}
-        {% elif is_current and user.role == "MANAGER" and revision.status == "WAITING_APPROVAL" %}
-            <form method="post" action="{% url 'approval:approve' revision.pk %}">
-                {% csrf_token %}
-                <input type="hidden" name="expected_version" value="{{ revision.version }}">
-                <button class="button button-primary" type="submit">Setujui Bid</button>
-            </form>
-            <a class="button button-secondary" href="{% url 'approval:reject-form' revision.pk %}">Tolak Bid</a>
         {% elif is_current and user.role == "MANAGER" and revision.status == "APPROVED" and revision.approval_decision.decided_by_id == user.id %}
             <a class="button button-primary" href="{% url 'signatures:sign' revision.pk %}">Tandatangani Bid</a>
         {% endif %}
     </div>
 </div>
+
+<ol class="workflow-track" aria-label="Tahap Bid Proposal">
+    <li class="workflow-step {% if revision.status == 'DRAFT' %}workflow-step-current{% else %}workflow-step-complete{% endif %}">Draft</li>
+    <li class="workflow-step {% if revision.status == 'WAITING_APPROVAL' %}workflow-step-current{% elif revision.status == 'REJECTED' %}workflow-step-rejected{% elif revision.status == 'APPROVED' or revision.status == 'SIGNED' or revision.status == 'FINALIZED' %}workflow-step-complete{% endif %}">{% if revision.status == 'REJECTED' %}Ditolak{% else %}Review{% endif %}</li>
+    <li class="workflow-step {% if revision.status == 'APPROVED' %}workflow-step-current{% elif revision.status == 'SIGNED' or revision.status == 'FINALIZED' %}workflow-step-complete{% endif %}">Disetujui</li>
+    <li class="workflow-step {% if revision.status == 'SIGNED' %}workflow-step-current{% elif revision.status == 'FINALIZED' %}workflow-step-complete{% endif %}">Ditandatangani</li>
+    <li class="workflow-step {% if revision.status == 'FINALIZED' %}workflow-step-current{% endif %}">Final</li>
+</ol>
+
+{% if is_current and user.role == "MANAGER" and revision.status == "WAITING_APPROVAL" %}
+    <section class="card irreversible-action" aria-labelledby="approval-decision-title">
+        <div class="irreversible-action-header">
+            <div>
+                <span class="eyebrow">Keputusan permanen · Bid R{{ revision.revision_number }}</span>
+                <h2 id="approval-decision-title">Tetapkan keputusan Manager</h2>
+                <p>Keputusan mengunci revision ini, dicatat dalam audit trail, dan tidak dapat dibatalkan. Periksa nilai bid, HPS, serta submission hash sebelum melanjutkan.</p>
+            </div>
+            <span class="decision-mark" aria-hidden="true">AUDIT</span>
+        </div>
+        <div class="form-actions">
+            <form method="post" action="{% url 'approval:approve' revision.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="expected_version" value="{{ revision.version }}">
+                <button class="button button-primary" type="submit">Setujui Bid R{{ revision.revision_number }}</button>
+            </form>
+            <a class="button button-danger" href="{% url 'approval:reject-form' revision.pk %}">Tolak dengan alasan</a>
+        </div>
+    </section>
+{% endif %}
 
 {% if revision.status == "REJECTED" and revision.approval_decision %}
     <div class="alert" role="alert">
@@ -76,38 +98,48 @@
 
 <section class="card detail-card">
     <dl class="detail-grid">
-        <div><dt>Status</dt><dd><span class="status-badge">{{ revision.get_status_display }}</span></dd></div>
+        <div><dt>Status</dt><dd><span class="status-badge {{ revision.status|status_class }}">{{ revision.get_status_display }}</span></dd></div>
         <div><dt>Procurement Result</dt><dd><a href="{% url 'sourcing:result-detail' revision.selected_result.pk %}">{{ revision.selected_result.pk }}</a></dd></div>
-        <div><dt>Total purchase</dt><dd>{{ revision.total_purchase|idr }}</dd></div>
-        <div><dt>Target margin</dt><dd>{% if revision.target_margin_percent is not None %}{{ revision.target_margin_percent|decimal_id }}%{% else %}Belum ditetapkan{% endif %}</dd></div>
-        <div><dt>Total bid</dt><dd>{% if revision.total_bid_value %}{{ revision.total_bid_value|idr }}{% else %}Belum dihitung{% endif %}</dd></div>
-        <div><dt>Gross profit</dt><dd>{% if revision.gross_profit is not None %}{{ revision.gross_profit|idr }}{% else %}Belum dihitung{% endif %}</dd></div>
-        <div><dt>Actual margin</dt><dd>{% if revision.actual_margin_percent is not None %}{{ revision.actual_margin_percent|decimal_id }}%{% else %}Belum dihitung{% endif %}</dd></div>
+        <div><dt>Total purchase</dt><dd class="numeric-value">{{ revision.total_purchase|idr }}</dd></div>
+        <div><dt>Target margin</dt><dd class="numeric-value">{% if revision.target_margin_percent is not None %}{{ revision.target_margin_percent|decimal_id }}%{% else %}Belum ditetapkan{% endif %}</dd></div>
+        <div><dt>Total bid</dt><dd class="numeric-value">{% if revision.total_bid_value %}{{ revision.total_bid_value|idr }}{% else %}Belum dihitung{% endif %}</dd></div>
+        <div><dt>Gross profit</dt><dd class="numeric-value">{% if revision.gross_profit is not None %}{{ revision.gross_profit|idr }}{% else %}Belum dihitung{% endif %}</dd></div>
+        <div><dt>Actual margin</dt><dd class="numeric-value">{% if revision.actual_margin_percent is not None %}{{ revision.actual_margin_percent|decimal_id }}%{% else %}Belum dihitung{% endif %}</dd></div>
         <div><dt>Kelayakan HPS</dt><dd>{% if revision.is_hps_feasible is None %}HPS tidak tersedia{% elif revision.is_hps_feasible %}Memenuhi HPS{% else %}Melebihi HPS{% endif %}</dd></div>
-        {% if revision.max_margin_percent is not None %}<div><dt>Margin maksimum</dt><dd>{{ revision.max_margin_percent|decimal_id }}%</dd></div>{% endif %}
-        {% if revision.submission_hash %}<div><dt>Submission hash</dt><dd class="hash-value">{{ revision.submission_hash }}</dd></div>{% endif %}
+        {% if revision.max_margin_percent is not None %}<div><dt>Margin maksimum</dt><dd class="numeric-value">{{ revision.max_margin_percent|decimal_id }}%</dd></div>{% endif %}
         {% if revision.approval_decision %}<div><dt>Keputusan Manager</dt><dd>{{ revision.approval_decision.get_decision_display }} · {{ revision.approval_decision.decided_by.full_name }}</dd></div>{% endif %}
         {% if revision.signature %}<div><dt>Signature</dt><dd>{{ revision.signature.signer_name }} · {{ revision.signature.signed_at|date:"d M Y H:i" }}{% if revision.signature.image_object_key %} · dengan gambar{% endif %}</dd></div>{% endif %}
     </dl>
 </section>
+
+{% if revision.submission_hash %}
+<section class="integrity-panel" aria-labelledby="bid-integrity-title">
+    <span class="integrity-seal" aria-hidden="true">SHA-256</span>
+    <div>
+        <strong id="bid-integrity-title">Submission R{{ revision.revision_number }} terkunci dan dapat diverifikasi</strong>
+        <p>Snapshot pricing dan sourcing yang diputuskan Manager dilindungi oleh hash berikut.</p>
+        <span class="hash-value">{{ revision.submission_hash }}</span>
+    </div>
+</section>
+{% endif %}
 
 {% if revision.generation_jobs.all %}
 <section class="card table-card content-section">
     <div class="section-heading padded-heading"><h2>Dokumen final</h2><p>Setiap generation menghasilkan version dan object baru.</p></div>
     <div class="table-wrap">
         <table class="data-table">
-            <thead><tr><th>Version</th><th>Nomor dokumen</th><th>Status</th><th>Checksum</th><th>Aksi</th></tr></thead>
+            <thead><tr><th class="numeric-cell">Version</th><th>Nomor dokumen</th><th>Status</th><th>Checksum</th><th>Aksi</th></tr></thead>
             <tbody>
                 {% for job in revision.generation_jobs.all %}
                     <tr>
-                        <td>V{{ job.document_version }}</td>
+                        <td class="numeric-cell">V{{ job.document_version }}</td>
                         <td>{{ job.input_snapshot.document.document_number }}</td>
-                        <td>{{ job.get_status_display }}</td>
+                        <td><span class="status-badge {{ job.status|status_class }}">{{ job.get_status_display }}</span></td>
                         <td class="hash-value">{% if job.status == "COMPLETED" %}{{ job.final_document.sha256 }}{% else %}—{% endif %}</td>
                         <td><a href="{% url 'documents:job-detail' job.pk %}">{% if job.status == "COMPLETED" %}Lihat / download{% else %}Lihat status{% endif %}</a></td>
                     </tr>
                 {% empty %}
-                    <tr><td class="empty-cell" colspan="5">Belum ada dokumen final.</td></tr>
+                    <tr><td class="empty-cell" colspan="5"><div class="empty-state"><span class="empty-state-mark" aria-hidden="true">PDF</span><strong>Belum ada artefak final</strong><p>Dokumen dapat dibuat setelah Bid disetujui dan ditandatangani.</p></div></td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -119,31 +151,40 @@
     <div class="section-heading padded-heading"><h2>Rincian pricing</h2><p>Harga final dihitung menggunakan {{ revision.calculation_version }}.</p></div>
     <div class="table-wrap">
         <table class="data-table">
-            <thead><tr><th>Item</th><th>Jumlah</th><th>Purchase</th><th>Harga bid/unit</th><th>Total bid</th></tr></thead>
+            <thead><tr><th>Item</th><th class="numeric-cell">Jumlah</th><th class="numeric-cell">Purchase</th><th class="numeric-cell">Harga bid/unit</th><th class="numeric-cell">Total bid</th></tr></thead>
             <tbody>
                 {% for item in revision.items.all %}
                     <tr>
                         <td>{{ item.product_snapshot.code }} — {{ item.product_snapshot.name }}</td>
-                        <td>{{ item.requested_quantity|quantity }} {{ item.unit }}</td>
-                        <td>{{ item.item_purchase_total|idr }}</td>
-                        <td>{{ item.bid_unit_price|idr }}</td>
-                        <td>{{ item.item_bid_total|idr }}</td>
+                        <td class="numeric-cell">{{ item.requested_quantity|quantity }} {{ item.unit }}</td>
+                        <td class="numeric-cell">{{ item.item_purchase_total|idr }}</td>
+                        <td class="numeric-cell">{{ item.bid_unit_price|idr }}</td>
+                        <td class="numeric-cell">{{ item.item_bid_total|idr }}</td>
                     </tr>
                 {% empty %}
-                    <tr><td class="empty-cell" colspan="5">Tetapkan target margin untuk menghitung pricing.</td></tr>
+                    <tr><td class="empty-cell" colspan="5"><div class="empty-state"><span class="empty-state-mark" aria-hidden="true">IDR</span><strong>Pricing belum dibekukan</strong><p>Tetapkan target margin untuk menghitung nilai bid per item dan kelayakan HPS.</p></div></td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </section>
 
-<section class="card table-card content-section">
-    <div class="section-heading padded-heading"><h2>Riwayat revision</h2><p>Submission dan keputusan lama tetap dipertahankan.</p></div>
-    <div class="table-wrap">
-        <table class="data-table">
-            <thead><tr><th>Revision</th><th>Status</th><th>Nilai bid</th><th>Dibuat</th></tr></thead>
-            <tbody>{% for history in revisions %}<tr><td><a href="{% url 'bids:revision-detail' history.pk %}">R{{ history.revision_number }}</a></td><td>{{ history.get_status_display }}</td><td>{% if history.total_bid_value %}{{ history.total_bid_value|idr }}{% else %}—{% endif %}</td><td>{{ history.created_at|date:"d M Y H:i" }}</td></tr>{% endfor %}</tbody>
-        </table>
+<section class="card version-panel content-section" aria-labelledby="bid-version-title">
+    <div class="section-heading">
+        <span class="eyebrow">Traceability</span>
+        <h2 id="bid-version-title">Jejak revision proposal</h2>
+        <p>Submission, keputusan, dan nilai dari setiap revision tetap dapat ditelusuri.</p>
     </div>
+    <ol class="version-timeline">
+        {% for history in revisions %}
+            <li class="version-item {% if history.pk == revision.pk %}version-item-current{% endif %}">
+                <div class="version-row">
+                    <a href="{% url 'bids:revision-detail' history.pk %}">Bid R{{ history.revision_number }}{% if history.pk == revision.pk %} · Sedang dilihat{% endif %}</a>
+                    <span class="status-badge {{ history.status|status_class }}">{{ history.get_status_display }}</span>
+                </div>
+                <p class="version-reason">{% if history.total_bid_value %}{{ history.total_bid_value|idr }}{% else %}Pricing belum ditetapkan{% endif %} · dibuat {{ history.created_at|date:"d M Y H:i" }}</p>
+            </li>
+        {% endfor %}
+    </ol>
 </section>
 {% endblock %}

@@ -37,13 +37,21 @@
 
 <section class="card detail-card">
     <dl class="detail-grid">
-        <div><dt>Status</dt><dd>{{ run.get_status_display }}</dd></div>
-        <div><dt>Jumlah hasil</dt><dd>{{ run.result_count }}</dd></div>
+        <div><dt>Status</dt><dd><span class="status-badge {{ run.status|status_class }}">{{ run.get_status_display }}</span></dd></div>
+        <div><dt>Jumlah hasil</dt><dd class="numeric-value">{{ run.result_count }}</dd></div>
         <div><dt>Mulai</dt><dd>{{ run.started_at|date:"d M Y H:i:s"|default:"Belum dimulai" }}</dd></div>
         <div><dt>Selesai</dt><dd>{{ run.completed_at|date:"d M Y H:i:s"|default:"Belum selesai" }}</dd></div>
-        <div><dt>Input hash</dt><dd class="hash-value">{{ run.input_hash }}</dd></div>
+        <div><dt>Input</dt><dd>Frozen snapshot R{{ run.tender_revision.revision_number }}</dd></div>
         {% if run.retry_of_run %}<div><dt>Retry dari</dt><dd><a href="{% url 'optimization:run-detail' run.retry_of_run.pk %}">{{ run.retry_of_run.pk }}</a></dd></div>{% endif %}
     </dl>
+</section>
+<section class="integrity-panel" aria-labelledby="optimization-integrity-title">
+    <span class="integrity-seal" aria-hidden="true">SHA-256</span>
+    <div>
+        <strong id="optimization-integrity-title">Input optimizer dibekukan sebelum proses</strong>
+        <p>Ranking pada run ini selalu dapat ditelusuri kembali ke snapshot tender dan offer yang sama.</p>
+        <span class="hash-value">{{ run.input_hash }}</span>
+    </div>
 </section>
 
 <section class="card table-card content-section">
@@ -53,17 +61,17 @@
     </div>
     <div class="table-wrap">
         <table class="data-table">
-            <thead><tr><th>Rank</th><th>Total purchase</th><th>Status</th><th>Aksi</th></tr></thead>
+            <thead><tr><th class="numeric-cell">Rank</th><th class="numeric-cell">Total purchase</th><th>Status</th><th>Aksi</th></tr></thead>
             <tbody>
                 {% for result in results %}
                     <tr>
-                        <td>#{{ result.rank }}</td>
-                        <td>{{ result.total_purchase|idr }}</td>
-                        <td><span class="status-badge">{{ result.get_status_display }}</span></td>
+                        <td class="numeric-cell">#{{ result.rank }}</td>
+                        <td class="numeric-cell">{{ result.total_purchase|idr }}</td>
+                        <td><span class="status-badge {{ result.status|status_class }}">{{ result.get_status_display }}</span></td>
                         <td><a href="{% url 'sourcing:result-detail' result.pk %}">Lihat result</a></td>
                     </tr>
                 {% empty %}
-                    <tr><td class="empty-cell" colspan="4">{% if run.status == "COMPLETED" %}Tidak ada kandidat valid untuk snapshot ini.{% else %}Hasil belum tersedia.{% endif %}</td></tr>
+                    <tr><td class="empty-cell" colspan="4"><div class="empty-state"><span class="empty-state-mark" aria-hidden="true">RS</span><strong>{% if run.status == "COMPLETED" %}Snapshot ini belum dapat dipenuhi{% else %}Rekomendasi sedang disiapkan{% endif %}</strong><p>{% if run.status == "COMPLETED" %}Periksa eligibility, kapasitas, dan masa berlaku offer lalu jalankan snapshot baru.{% else %}Hasil sourcing akan muncul setelah worker menyelesaikan kalkulasi.{% endif %}</p></div></td></tr>
                 {% endfor %}
             </tbody>
         </table>

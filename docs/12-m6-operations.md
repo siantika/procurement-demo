@@ -19,8 +19,9 @@ Validasi konfigurasi sebelum menyalakan container:
 docker compose --env-file .env.vps config --quiet
 ```
 
-Semua target `docker-*` memakai `.env.vps` secara default dan menerima
-override yang sama, misalnya
+Semua target `docker-*` memakai `.env` secara default untuk operasi lokal.
+Pada VPS, berikan `ENV_FILE=.env.vps` pada setiap target. Target juga menerima
+file environment lain, misalnya
 `make docker-status ENV_FILE=.env.vps.staging`.
 
 Untuk VPS publik, gunakan `.env.vps.example` sebagai sumber `.env.vps`,
@@ -30,7 +31,7 @@ environment yang dapat dibaca user lain.
 
 ```bash
 chmod 600 .env.vps
-make docker-preflight-vps
+make docker-preflight-vps ENV_FILE=.env.vps
 ```
 
 Port loopback web dapat dipindahkan bila `8000` sudah dipakai aplikasi lain
@@ -44,9 +45,9 @@ segera setelah virtual host aktif agar seluruh request dialihkan ke HTTPS.
 ## Menjalankan stack
 
 ```bash
-make docker-start
-make docker-status
-make docker-seed
+make docker-start ENV_FILE=.env.vps
+make docker-status ENV_FILE=.env.vps
+make docker-seed ENV_FILE=.env.vps
 ```
 
 Endpoint minimum:
@@ -60,7 +61,7 @@ Endpoint minimum:
 Jalankan primary scenario tiga kali melalui worker dan private storage:
 
 ```bash
-make docker-smoke
+make docker-smoke ENV_FILE=.env.vps
 ```
 
 Setiap pengulangan smoke membuat run/Bid/dokumen baru tanpa reset otomatis.
@@ -75,8 +76,8 @@ Product `PUMP-001`, Supplier `SUP-A..C`, Offer `DEMO-OFFER-A..C`,
 dan `DEMO-TENDER-001` beserta workflow turunannya.
 
 ```bash
-make docker-reset
-make docker-seed
+make docker-reset ENV_FILE=.env.vps
+make docker-seed ENV_FILE=.env.vps
 ```
 
 PostgreSQL migration history, document-number sequence tahunan, dan object di luar dataset demo tidak dihapus. Notifikasi recipient demo dan audit actor/entity demo ikut direset. Reset bukan pembersih orphan bucket umum.
@@ -84,7 +85,7 @@ PostgreSQL migration history, document-number sequence tahunan, dan object di lu
 ## Backup
 
 ```bash
-make docker-backup
+make docker-backup ENV_FILE=.env.vps
 ```
 
 Artefak berada di `backups/demo-<UTC>/` dan berisi dump PostgreSQL,
@@ -101,8 +102,8 @@ jalankan `/health/ready/`, cocokkan checksum FinalDocument, lalu jalankan
 ## Shutdown dan troubleshooting
 
 ```bash
-make docker-logs
-make docker-stop
+make docker-logs ENV_FILE=.env.vps
+make docker-stop ENV_FILE=.env.vps
 ```
 
 Jika job tertahan, periksa worker sesuai queue dan biarkan reconciliation
@@ -113,7 +114,8 @@ ketika rendering gagal. Pada regeneration Bid tetap `FINALIZED` dan PDF
 lama tersedia; jangan mengubah status secara manual. Staff dapat meminta
 pembuatan dokumen lagi setelah job terminal untuk job/version baru.
 
-Untuk Compose HTTP lokal gunakan `.env.demo.example` sebagai `.env.demo`
-dan `ENV_FILE=.env.demo` pada seluruh target. Development host memakai
-`.env.example`/`.env` dan `make start`; prosedur lengkap ada di
+Untuk Compose HTTP lokal gunakan `.env` yang berasal dari `.env.example`, lalu
+jalankan target `docker-*` tanpa override. `compose.local.yaml` mengganti
+endpoint host dengan hostname service Compose, sehingga file yang sama juga
+dapat digunakan oleh development host melalui `make start`. Prosedur lengkap ada di
 [Demo Runbook](11-demo-runbook.md).

@@ -8,7 +8,7 @@
     <div>
         <span class="eyebrow">{{ result.tender_revision.tender_request.internal_code }} · R{{ result.tender_revision.revision_number }}</span>
         <h1>Procurement Result</h1>
-        <p>{{ result.get_source_type_display }} · {{ result.get_status_display }} · Version {{ result.version }}</p>
+        <p>{{ result.get_source_type_display }} · <span class="status-badge {{ result.status|status_class }}">{{ result.get_status_display }}</span> · Version {{ result.version }}</p>
     </div>
     <div class="form-actions">
         {% if result.status == "DRAFT" %}
@@ -39,16 +39,25 @@
 </div>
 <section class="card detail-card">
     <dl class="detail-grid">
-        <div><dt>Status</dt><dd>{{ result.get_status_display }}</dd></div>
+        <div><dt>Status</dt><dd><span class="status-badge {{ result.status|status_class }}">{{ result.get_status_display }}</span></dd></div>
         <div><dt>Source</dt><dd>{{ result.get_source_type_display }}</dd></div>
         {% if result.optimization_run %}<div><dt>Optimization rank</dt><dd><a href="{% url 'optimization:run-detail' result.optimization_run.pk %}">#{{ result.rank }} · buka run</a></dd></div>{% endif %}
-        <div><dt>Total purchase</dt><dd>{% if result.total_purchase %}{{ result.total_purchase|idr }}{% else %}Belum dihitung{% endif %}</dd></div>
+        <div><dt>Total purchase</dt><dd class="numeric-value">{% if result.total_purchase %}{{ result.total_purchase|idr }}{% else %}Belum dihitung{% endif %}</dd></div>
         <div><dt>Calculation version</dt><dd>{{ result.calculation_version }}</dd></div>
         <div><dt>Selection</dt><dd>{% if current_selection and current_selection.procurement_result_id == result.pk %}Pilihan aktif #{{ current_selection.selection_number }}{% else %}Tidak dipilih{% endif %}</dd></div>
         {% if result.source_result %}<div><dt>Source result</dt><dd><a href="{% url 'sourcing:result-detail' result.source_result.pk %}">{{ result.source_result.pk }}</a></dd></div>{% endif %}
-        {% if result.result_hash %}<div><dt>Result hash</dt><dd class="hash-value">{{ result.result_hash }}</dd></div>{% endif %}
     </dl>
 </section>
+{% if result.result_hash %}
+<section class="integrity-panel" aria-labelledby="result-integrity-title">
+    <span class="integrity-seal" aria-hidden="true">SHA-256</span>
+    <div>
+        <strong id="result-integrity-title">Allocation VALID telah dikunci</strong>
+        <p>Supplier, jumlah, dan harga net pada result ini disimpan sebagai historical snapshot.</p>
+        <span class="hash-value">{{ result.result_hash }}</span>
+    </div>
+</section>
+{% endif %}
 {% for item in result.items.all %}
     <section class="card table-card content-section">
         <div class="section-heading padded-heading">
@@ -57,17 +66,17 @@
         </div>
         <div class="table-wrap">
             <table class="data-table">
-                <thead><tr><th>Baris</th><th>Supplier</th><th>Jumlah</th><th>Harga net</th><th>Cost</th></tr></thead>
+                <thead><tr><th class="numeric-cell">Baris</th><th>Supplier</th><th class="numeric-cell">Jumlah</th><th class="numeric-cell">Harga net</th><th class="numeric-cell">Cost</th></tr></thead>
                 <tbody>
                     {% for allocation in item.allocations.all %}
                         <tr>
-                            <td>{{ allocation.line_number }}</td>
+                            <td class="numeric-cell">{{ allocation.line_number }}</td>
                             <td>{{ allocation.supplier_snapshot.code }} — {{ allocation.supplier_snapshot.name }}</td>
-                            <td>{{ allocation.allocated_quantity|quantity }} {{ item.unit_snapshot }}</td>
-                            <td>{{ allocation.net_purchase_price_snapshot|idr }}</td>
-                            <td>{{ allocation.allocation_purchase|idr }}</td>
+                            <td class="numeric-cell">{{ allocation.allocated_quantity|quantity }} {{ item.unit_snapshot }}</td>
+                            <td class="numeric-cell">{{ allocation.net_purchase_price_snapshot|idr }}</td>
+                            <td class="numeric-cell">{{ allocation.allocation_purchase|idr }}</td>
                         </tr>
-                    {% empty %}<tr><td colspan="5" class="empty-cell">Belum ada allocation.</td></tr>{% endfor %}
+                    {% empty %}<tr><td colspan="5" class="empty-cell"><div class="empty-state"><span class="empty-state-mark" aria-hidden="true">AL</span><strong>Item ini belum dialokasikan</strong><p>Tentukan supplier dan jumlah untuk memenuhi kebutuhan item tender.</p></div></td></tr>{% endfor %}
                 </tbody>
             </table>
         </div>

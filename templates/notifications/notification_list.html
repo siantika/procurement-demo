@@ -17,7 +17,7 @@
             <tbody>
                 {% for notification in notifications %}
                     <tr>
-                        <td><span class="status-badge">{% if notification.is_read %}Dibaca{% else %}Baru{% endif %}</span></td>
+                        <td><span class="status-badge {% if notification.is_read %}status-draft{% else %}status-review{% endif %}">{% if notification.is_read %}Dibaca{% else %}Baru{% endif %}</span></td>
                         <td><strong>{{ notification.title }}</strong><br><span class="muted">{{ notification.message }}</span></td>
                         <td>{{ notification.created_at|date:"d M Y H:i" }}</td>
                         <td>
@@ -35,7 +35,7 @@
                         </td>
                     </tr>
                 {% empty %}
-                    <tr><td class="empty-cell" colspan="4">Belum ada notifikasi.</td></tr>
+                    <tr><td class="empty-cell" colspan="4"><div class="empty-state"><span class="empty-state-mark" aria-hidden="true">NT</span><strong>Tidak ada tindak lanjut baru</strong><p>Perubahan optimizer, approval, signature, dan dokumen final akan tercatat di sini.</p></div></td></tr>
                 {% endfor %}
             </tbody>
         </table>

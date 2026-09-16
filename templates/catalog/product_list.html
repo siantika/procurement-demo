@@ -20,7 +20,7 @@
                     <tr>
                         <td><a href="{% url 'catalog:product-detail' product.pk %}">{{ product.code }}</a></td><td>{{ product.name }}</td>
                         <td>{{ product.default_unit }}</td>
-                        <td><span class="status-badge">{% if product.is_active %}Aktif{% else %}Nonaktif{% endif %}</span></td>
+                        <td><span class="status-badge {% if product.is_active %}status-approved{% else %}status-rejected{% endif %}">{% if product.is_active %}Aktif{% else %}Nonaktif{% endif %}</span></td>
                         <td><div class="inline-actions">
                             <a href="{% url 'catalog:product-update' product.pk %}">Ubah</a>
                             {% if product.is_active %}
@@ -30,7 +30,7 @@
                             {% endif %}
                         </div></td>
                     </tr>
-                {% empty %}<tr><td colspan="5" class="empty-cell">Belum ada produk.</td></tr>{% endfor %}
+                {% empty %}<tr><td colspan="5" class="empty-cell"><div class="empty-state"><span class="empty-state-mark" aria-hidden="true">PR</span><strong>Katalog medis belum disiapkan</strong><p>Tambahkan produk beserta satuan canonical sebelum mencatat offer atau kebutuhan tender.</p><a class="button button-secondary" href="{% url 'catalog:product-create' %}">Tambah produk pertama</a></div></td></tr>{% endfor %}
             </tbody>
         </table>
     </div>

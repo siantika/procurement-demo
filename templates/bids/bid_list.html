@@ -14,19 +14,19 @@
 <section class="card table-card">
     <div class="table-wrap">
         <table class="data-table">
-            <thead><tr><th>Nomor</th><th>Tender</th><th>Revision</th><th>Status</th><th>Nilai bid</th><th>Aksi</th></tr></thead>
+            <thead><tr><th>Nomor</th><th>Tender</th><th class="numeric-cell">Revision</th><th>Status</th><th class="numeric-cell">Nilai bid</th><th>Aksi</th></tr></thead>
             <tbody>
                 {% for row in rows %}
                     <tr>
                         <td>{{ row.proposal.proposal_number }}</td>
                         <td>{{ row.proposal.tender_request.internal_code }}</td>
-                        <td>R{{ row.revision.revision_number }}</td>
-                        <td><span class="status-badge">{{ row.revision.get_status_display }}</span></td>
-                        <td>{% if row.revision.total_bid_value %}{{ row.revision.total_bid_value|idr }}{% else %}Belum dihitung{% endif %}</td>
+                        <td class="numeric-cell"><span class="version-badge">R{{ row.revision.revision_number }}</span></td>
+                        <td><span class="status-badge {{ row.revision.status|status_class }}">{{ row.revision.get_status_display }}</span></td>
+                        <td class="numeric-cell">{% if row.revision.total_bid_value %}{{ row.revision.total_bid_value|idr }}{% else %}Belum dihitung{% endif %}</td>
                         <td><a href="{% url 'bids:detail' row.proposal.pk %}">Buka</a></td>
                     </tr>
                 {% empty %}
-                    <tr><td class="empty-cell" colspan="6">Belum ada Bid Proposal. Pilih Procurement Result untuk membuatnya.</td></tr>
+                    <tr><td class="empty-cell" colspan="6"><div class="empty-state"><span class="empty-state-mark" aria-hidden="true">BD</span><strong>Belum ada proposal yang siap dihitung</strong><p>Validasi dan pilih Procurement Result terlebih dahulu, lalu buat Bid dari hasil pilihan tersebut.</p><a class="button button-secondary" href="{% url 'sourcing:result-list' %}">Tinjau Procurement Result</a></div></td></tr>
                 {% endfor %}
             </tbody>
         </table>

@@ -1,11 +1,15 @@
 from django.contrib.auth.decorators import login_required
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
+from django.db.models import F
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
 
+from apps.accounts.choices import UserRole
 from apps.accounts.policies import require_valid_role
+from apps.bids.choices import BidStatus
+from apps.bids.models import BidProposalRevision
 from apps.documents.choices import GenerationJobStatus
 from apps.documents.models import DocumentGenerationJob
 from apps.optimization.choices import OptimizationStatus
@@ -16,7 +20,35 @@ from config.metrics import snapshot_http_metrics
 @login_required
 def dashboard_view(request):
     require_valid_role(request.user)
-    return render(request, "dashboard.html")
+    context = {
+        "pending_approval_count": 0,
+        "rejected_bid_count": 0,
+        "active_optimization_count": 0,
+    }
+    if request.user.role == UserRole.MANAGER:
+        context["pending_approval_count"] = (
+            BidProposalRevision.objects.filter(
+                status=BidStatus.WAITING_APPROVAL
+            ).count()
+        )
+    elif request.user.role == UserRole.PROCUREMENT_STAFF:
+        context["rejected_bid_count"] = (
+            BidProposalRevision.objects.filter(
+                status=BidStatus.REJECTED,
+                revision_number=F(
+                    "bid_proposal__current_revision_number"
+                ),
+            ).count()
+        )
+        context["active_optimization_count"] = (
+            OptimizationRun.objects.filter(
+                status__in=(
+                    OptimizationStatus.PENDING,
+                    OptimizationStatus.RUNNING,
+                )
+            ).count()
+        )
+    return render(request, "dashboard.html", context)
 
 
 def health_live(request):

@@ -5,14 +5,14 @@ x-app: &app
     context: .
   image: procurement-demo:local
   env_file:
-    - ${ENV_FILE:-.env.vps}
+    - ${ENV_FILE:-.env}
   restart: unless-stopped
 
 services:
   postgres:
     image: postgres:16.10-bookworm
     env_file:
-      - ${ENV_FILE:-.env.vps}
+      - ${ENV_FILE:-.env}
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -34,8 +34,9 @@ services:
 
   minio:
     image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
-    env_file:
-      - ${ENV_FILE:-.env.vps}
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-${MINIO_ACCESS_KEY}}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-${MINIO_SECRET_KEY}}
     command: ["server", "/data", "--console-address", ":9001"]
     ports:
       - "127.0.0.1:9000:9000"
@@ -51,8 +52,10 @@ services:
 
   minio-init:
     image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
-    env_file:
-      - ${ENV_FILE:-.env.vps}
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-${MINIO_ACCESS_KEY}}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-${MINIO_SECRET_KEY}}
+      MINIO_BUCKET: ${MINIO_BUCKET}
     depends_on:
       minio:
         condition: service_healthy
@@ -146,8 +149,10 @@ services:
   minio-client:
     image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
     profiles: ["tools"]
-    env_file:
-      - ${ENV_FILE:-.env.vps}
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-${MINIO_ACCESS_KEY}}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-${MINIO_SECRET_KEY}}
+      MINIO_BUCKET: ${MINIO_BUCKET}
     volumes:
       - ./backups:/backups
     entrypoint: ["/bin/sh", "-c"]

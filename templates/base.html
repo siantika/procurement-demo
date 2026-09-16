@@ -4,45 +4,85 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}Procurement ERP{% endblock %}</title>
+    <meta name="theme-color" content="#1C3D3A">
+    <title>{% block title %}Medical Procurement Ledger{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'css/app.css' %}">
 </head>
 <body>
     <header class="site-header">
         <div class="header-inner">
             <a class="brand" href="{% url 'dashboard' %}">
-                <span class="brand-mark" aria-hidden="true">P</span>
-                <span>
-                    <strong>Procurement</strong>
-                    <small>Medical ERP</small>
+                <span class="brand-mark" aria-hidden="true">MP</span>
+                <span class="brand-copy">
+                    <strong>Medical Procurement</strong>
+                    <small>Bid Optimizer / Audit Ledger</small>
                 </span>
             </a>
+            <span class="system-classification">
+                Internal · Controlled record
+            </span>
+        </div>
 
+        <div class="nav-strip">
             <nav class="main-nav" aria-label="Navigasi utama">
                 {% if user.is_authenticated %}
-                    <a href="{% url 'dashboard' %}">Dashboard</a>
+                    <a href="{% url 'dashboard' %}">
+                        {% include "components/icon.html" with name="dashboard" %}
+                        <span>Dashboard</span>
+                    </a>
                     {% if user.role == "ADMIN" %}
-                        <a href="{% url 'catalog:product-list' %}">Produk</a>
-                        <a href="{% url 'catalog:supplier-list' %}">Supplier</a>
+                        <a href="{% url 'catalog:product-list' %}">
+                            {% include "components/icon.html" with name="product" %}
+                            <span>Produk</span>
+                        </a>
+                        <a href="{% url 'catalog:supplier-list' %}">
+                            {% include "components/icon.html" with name="supplier" %}
+                            <span>Supplier</span>
+                        </a>
                     {% elif user.role == "PROCUREMENT_STAFF" %}
-                        <a href="{% url 'sourcing:offer-list' %}">Offer</a>
-                        <a href="{% url 'tender:list' %}">Tender</a>
-                        <a href="{% url 'sourcing:result-list' %}">Result</a>
-                        <a href="{% url 'bids:list' %}">Bid</a>
+                        <a href="{% url 'sourcing:offer-list' %}">
+                            {% include "components/icon.html" with name="offer" %}
+                            <span>Offer</span>
+                        </a>
+                        <a href="{% url 'tender:list' %}">
+                            {% include "components/icon.html" with name="tender" %}
+                            <span>Tender</span>
+                        </a>
+                        <a href="{% url 'sourcing:result-list' %}">
+                            {% include "components/icon.html" with name="result" %}
+                            <span>Result</span>
+                        </a>
+                        <a href="{% url 'bids:list' %}">
+                            {% include "components/icon.html" with name="bid" %}
+                            <span>Bid</span>
+                        </a>
                     {% elif user.role == "MANAGER" %}
-                        <a href="{% url 'approval:queue' %}">Approval</a>
+                        <a href="{% url 'approval:queue' %}">
+                            {% include "components/icon.html" with name="approval" %}
+                            <span>Approval</span>
+                        </a>
                     {% endif %}
-                    <a href="{% url 'notifications:list' %}">Notifikasi</a>
-                    <a href="{% url 'accounts:profile' %}">Profil</a>
+                    <a href="{% url 'notifications:list' %}">
+                        {% include "components/icon.html" with name="notifications" %}
+                        <span>Notifikasi</span>
+                    </a>
+                    <a href="{% url 'accounts:profile' %}">
+                        {% include "components/icon.html" with name="profile" %}
+                        <span>Profil</span>
+                    </a>
                     <form method="post"
                           action="{% url 'accounts:logout' %}">
                         {% csrf_token %}
                         <button class="nav-button" type="submit">
-                            Keluar
+                            {% include "components/icon.html" with name="logout" %}
+                            <span>Keluar</span>
                         </button>
                     </form>
                 {% else %}
-                    <a href="{% url 'accounts:login' %}">Masuk</a>
+                    <a href="{% url 'accounts:login' %}">
+                        {% include "components/icon.html" with name="login" %}
+                        <span>Masuk</span>
+                    </a>
                 {% endif %}
             </nav>
         </div>
@@ -59,6 +99,7 @@
         {% endif %}
         {% block content %}{% endblock %}
     </main>
+
     {% if toast_notifications %}
         <aside class="toast-region"
                aria-label="Notifikasi terbaru"
@@ -89,6 +130,7 @@
             {% endfor %}
         </aside>
     {% endif %}
+
     <script src="{% static 'notifications/js/toasts.js' %}" defer></script>
     {% block extra_scripts %}{% endblock %}
 </body>

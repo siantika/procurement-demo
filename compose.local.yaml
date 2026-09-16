@@ -1,0 +1,31 @@
+x-local-app-environment: &local-app-environment
+  APP_ENV: demo
+  DJANGO_SETTINGS_MODULE: config.settings.demo
+  DATABASE_URL: postgresql://procurement:procurement-local@postgres:5432/procurement
+  CELERY_BROKER_URL: redis://redis:6379/0
+  DJANGO_CACHE_URL: redis://redis:6379/1
+  MINIO_ENDPOINT: minio:9000
+  MINIO_SECURE: "false"
+  DJANGO_SECURE_SSL_REDIRECT: "false"
+  DJANGO_SESSION_COOKIE_SECURE: "false"
+  DJANGO_CSRF_COOKIE_SECURE: "false"
+  DJANGO_SECURE_HSTS_SECONDS: "0"
+
+services:
+  postgres:
+    environment:
+      POSTGRES_DB: procurement
+      POSTGRES_USER: procurement
+      POSTGRES_PASSWORD: procurement-local
+
+  web:
+    environment: *local-app-environment
+
+  worker-optimization:
+    environment: *local-app-environment
+
+  worker-documents:
+    environment: *local-app-environment
+
+  scheduler:
+    environment: *local-app-environment

@@ -15,7 +15,7 @@
 <section class="card table-card">
     <div class="table-wrap">
         <table class="data-table">
-            <thead><tr><th>Tender</th><th>Sumber</th><th>Status</th><th>Total purchase</th><th>Pilihan</th><th>Aksi</th></tr></thead>
+            <thead><tr><th>Tender</th><th>Sumber</th><th>Status</th><th class="numeric-cell">Total purchase</th><th>Pilihan</th><th>Aksi</th></tr></thead>
             <tbody>
                 {% for row in rows %}{% with result=row.result %}
                     <tr>
@@ -24,13 +24,13 @@
                             {{ result.get_source_type_display }}
                             {% if result.optimization_run %}<br><a href="{% url 'optimization:run-detail' result.optimization_run.pk %}">Rank #{{ result.rank }}</a>{% endif %}
                         </td>
-                        <td><span class="status-badge">{{ result.get_status_display }}</span></td>
-                        <td>{% if result.total_purchase %}{{ result.total_purchase|idr }}{% else %}Belum dihitung{% endif %}</td>
-                        <td>{% if row.selected %}<span class="status-badge">Terpilih</span>{% else %}—{% endif %}</td>
+                        <td><span class="status-badge {{ result.status|status_class }}">{{ result.get_status_display }}</span></td>
+                        <td class="numeric-cell">{% if result.total_purchase %}{{ result.total_purchase|idr }}{% else %}Belum dihitung{% endif %}</td>
+                        <td>{% if row.selected %}<span class="status-badge status-approved">Terpilih</span>{% else %}—{% endif %}</td>
                         <td><a href="{% url 'sourcing:result-detail' result.pk %}">Buka</a></td>
                     </tr>
                 {% endwith %}{% empty %}
-                    <tr><td colspan="6" class="empty-cell">Belum ada Procurement Result.</td></tr>
+                    <tr><td colspan="6" class="empty-cell"><div class="empty-state"><span class="empty-state-mark" aria-hidden="true">RS</span><strong>Belum ada alternatif sourcing</strong><p>Pilih tender untuk menyusun alokasi manual atau jalankan optimizer dari detail tender.</p><a class="button button-secondary" href="{% url 'tender:list' %}">Pilih tender</a></div></td></tr>
                 {% endfor %}
             </tbody>
         </table>

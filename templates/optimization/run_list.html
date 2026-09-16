@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load procurement_format %}
 
 {% block title %}Optimization · Procurement ERP{% endblock %}
 
@@ -15,20 +16,20 @@
     <div class="table-wrap">
         <table class="data-table">
             <thead>
-                <tr><th>Tender</th><th>Status</th><th>Hasil</th><th>Algoritma</th><th>Diminta</th><th>Aksi</th></tr>
+                <tr><th>Tender</th><th>Status</th><th class="numeric-cell">Hasil</th><th>Algoritma</th><th>Diminta</th><th>Aksi</th></tr>
             </thead>
             <tbody>
                 {% for run in runs %}
                     <tr>
                         <td>{{ run.tender_request.internal_code }} · R{{ run.tender_revision.revision_number }}</td>
-                        <td><span class="status-badge">{{ run.get_status_display }}</span></td>
-                        <td>{{ run.result_count }} rekomendasi</td>
+                        <td><span class="status-badge {{ run.status|status_class }}">{{ run.get_status_display }}</span></td>
+                        <td class="numeric-cell">{{ run.result_count }} rekomendasi</td>
                         <td>{{ run.algorithm_version }}</td>
                         <td>{{ run.created_at|date:"d M Y H:i" }}</td>
                         <td><a href="{% url 'optimization:run-detail' run.pk %}">Buka</a></td>
                     </tr>
                 {% empty %}
-                    <tr><td class="empty-cell" colspan="6">Belum ada Optimization Run.</td></tr>
+                    <tr><td class="empty-cell" colspan="6"><div class="empty-state"><span class="empty-state-mark" aria-hidden="true">OP</span><strong>Belum ada tender yang dioptimalkan</strong><p>Buka tender dengan offer yang eligible untuk mencari rekomendasi sourcing berbiaya terendah.</p><a class="button button-secondary" href="{% url 'tender:list' %}">Pilih tender</a></div></td></tr>
                 {% endfor %}
             </tbody>
         </table>

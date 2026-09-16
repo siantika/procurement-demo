@@ -1,0 +1,57 @@
+<svg class="icon"
+     viewBox="0 0 24 24"
+     fill="none"
+     stroke="currentColor"
+     stroke-width="1.6"
+     stroke-linecap="square"
+     stroke-linejoin="miter"
+     aria-hidden="true"
+     focusable="false">
+    {% if name == "dashboard" %}
+        <rect x="3" y="3" width="7" height="7" />
+        <rect x="14" y="3" width="7" height="7" />
+        <rect x="3" y="14" width="7" height="7" />
+        <path d="M14 14h7v7h-7zM17.5 14v7" />
+    {% elif name == "product" %}
+        <path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z" />
+        <path d="m4 7.5 8 4.5 8-4.5M12 12v9M9 7h6M12 4v6" />
+    {% elif name == "supplier" %}
+        <path d="M4 21V5h11v16M15 10h5v11M2 21h20" />
+        <path d="M7 8h2M11 8h2M7 12h2M11 12h2M7 16h2M11 16h2M18 14h2M18 18h2" />
+    {% elif name == "offer" %}
+        <path d="M3 12V5h7l10 10-7 7L3 12Z" />
+        <circle cx="7.5" cy="9.5" r="1.25" />
+        <path d="m11 13 4 4M15 12l-4 6" />
+    {% elif name == "tender" %}
+        <path d="M7 4H5v17h14V4h-2M9 3h6v4H9z" />
+        <path d="M8 11h8M8 15h8M8 19h5" />
+    {% elif name == "result" %}
+        <path d="M5 5h4M5 12h4M5 19h4M13 5h6M13 12h6M13 19h6" />
+        <path d="m3 4 1 1 2-2M3 11l1 1 2-2M3 18l1 1 2-2" />
+    {% elif name == "optimization" %}
+        <circle cx="5" cy="17" r="2" />
+        <circle cx="12" cy="6" r="2" />
+        <circle cx="19" cy="14" r="2" />
+        <path d="m6.5 15.5 4-7M13.8 7.2l3.5 5.4M7 17h10" />
+    {% elif name == "bid" %}
+        <path d="M5 3h10l4 4v14H5zM15 3v5h4" />
+        <path d="M8 12h8M8 16h5M8 19h8" />
+        <circle cx="9" cy="8" r="1.5" />
+    {% elif name == "approval" %}
+        <path d="M12 3 20 6v6c0 4.8-3.1 7.6-8 9-4.9-1.4-8-4.2-8-9V6z" />
+        <path d="m8 12 2.5 2.5L16 9" />
+    {% elif name == "notifications" %}
+        <path d="M6 9a6 6 0 0 1 12 0c0 7 3 7 3 7H3s3 0 3-7Z" />
+        <path d="M10 20h4" />
+    {% elif name == "profile" %}
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 21c.8-4.3 3.5-6 8-6s7.2 1.7 8 6" />
+    {% elif name == "logout" %}
+        <path d="M10 4H4v16h6M14 8l4 4-4 4M8 12h10" />
+    {% elif name == "login" %}
+        <path d="M14 4h6v16h-6M10 8l4 4-4 4M4 12h10" />
+    {% else %}
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 7v6M12 17h.01" />
+    {% endif %}
+</svg>

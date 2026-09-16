@@ -76,9 +76,13 @@ Dockerfile menjalankan aplikasi sebagai user `appuser` dan menginstal Noto font 
 - `config.settings.local`: DEBUG default true, PostgreSQL socket default, Redis lokal, MinIO lokal, dan fallback development secret.
 - `config.settings.test`: PostgreSQL test database, eager Celery dengan memory broker/backend, test password hasher, serta cache bawaan Django bila tidak dioverride test.
 - `config.settings.demo`: DEBUG false, required environment values, WhiteNoise, proxy SSL header, secure cookie/redirect, dan HSTS configurable.
-- `.env.example`: development host; `.env.demo.example`: Compose HTTP lokal; `.env.vps.example`: Compose di belakang HTTPS proxy.
+- `.env.example`: template `.env` untuk development host dan Compose HTTP
+  lokal; `compose.local.yaml` mengganti endpoint internal container.
+  `.env.vps.example` adalah template `.env.vps` untuk Compose di belakang
+  HTTPS proxy.
 - `make start/stop/status/logs`: process lokal via `scripts/dev-services.sh`, dengan PostgreSQL/Redis host dan container MinIO terpisah.
-- `make docker-*`: Compose demo dengan `ENV_FILE` default `.env.vps`.
+- `make docker-*`: Compose demo dengan `ENV_FILE` default `.env`; VPS wajib
+  menggunakan override `ENV_FILE=.env.vps`.
 
 Preflight VPS dan template Nginx tersedia. Repository tidak membuktikan provider, lokasi VPS, kapasitas mesin, TLS aktif, atau kondisi deployment nyata. Tidak ada SLA/high availability maupun multi-host topology.
 

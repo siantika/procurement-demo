@@ -30,8 +30,21 @@ from .policies import (
     require_role,
     require_valid_role,
 )
+from .templatetags.procurement_format import status_class
 
 User = get_user_model()
+
+
+class StatusPresentationTests(TestCase):
+    def test_workflow_values_map_to_stable_visual_states(self):
+        self.assertEqual(status_class("DRAFT"), "status-draft")
+        self.assertEqual(
+            status_class("WAITING_APPROVAL"), "status-review"
+        )
+        self.assertEqual(status_class("APPROVED"), "status-approved")
+        self.assertEqual(status_class("REJECTED"), "status-rejected")
+        self.assertEqual(status_class("SIGNED"), "status-signed")
+        self.assertEqual(status_class("FINALIZED"), "status-finalized")
 
 
 class UserModelTests(TestCase):

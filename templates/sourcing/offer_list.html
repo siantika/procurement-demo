@@ -13,17 +13,17 @@
     <a class="button button-primary" href="{% url 'sourcing:offer-create' %}">Catat offer</a>
 </div>
 <section class="card table-card"><div class="table-wrap"><table class="data-table">
-    <thead><tr><th>Supplier</th><th>Produk</th><th>Harga net</th><th>Tersedia</th><th>Status</th><th>Aksi</th></tr></thead>
+    <thead><tr><th>Supplier</th><th>Produk</th><th class="numeric-cell">Harga net</th><th class="numeric-cell">Tersedia</th><th>Status</th><th>Aksi</th></tr></thead>
     <tbody>{% for row in rows %}{% with offer=row.offer eligibility=row.eligibility %}<tr>
         <td><a href="{% url 'sourcing:offer-detail' offer.pk %}">{{ offer.supplier.code }}</a></td><td>{{ offer.product.name }}</td>
-        <td>{{ offer.net_purchase_price|idr }}</td>
-        <td>{% if offer.available_quantity is None %}Tanpa batas{% else %}{{ offer.available_quantity|quantity }}{% endif %}</td>
-        <td><span class="status-badge">{% if eligibility.eligible %}Eligible{% else %}Tidak eligible{% endif %}</span><small class="field-help">{{ eligibility.message }}</small></td>
+        <td class="numeric-cell">{{ offer.net_purchase_price|idr }}</td>
+        <td class="numeric-cell">{% if offer.available_quantity is None %}Tanpa batas{% else %}{{ offer.available_quantity|quantity }}{% endif %}</td>
+        <td><span class="status-badge {% if eligibility.eligible %}status-approved{% else %}status-rejected{% endif %}">{% if eligibility.eligible %}Eligible{% else %}Tidak eligible{% endif %}</span><small class="field-help">{{ eligibility.message }}</small></td>
         <td><div class="inline-actions">
             <a href="{% url 'sourcing:offer-update' offer.pk %}">Koreksi</a>
             <a href="{% url 'sourcing:offer-supersede' offer.pk %}">Versi baru</a>
             {% if offer.is_active %}<form method="post" action="{% url 'sourcing:offer-deactivate' offer.pk %}">{% csrf_token %}<input type="hidden" name="expected_version" value="{{ offer.version }}"><button class="text-button danger-text" type="submit">Nonaktifkan</button></form>{% endif %}
         </div></td>
-    </tr>{% endwith %}{% empty %}<tr><td colspan="6" class="empty-cell">Belum ada supplier offer.</td></tr>{% endfor %}</tbody>
+    </tr>{% endwith %}{% empty %}<tr><td colspan="6" class="empty-cell"><div class="empty-state"><span class="empty-state-mark" aria-hidden="true">QT</span><strong>Belum ada harga supplier untuk dibandingkan</strong><p>Catat offer beserta harga net, kapasitas, dan masa berlakunya sebelum menyusun sourcing.</p><a class="button button-secondary" href="{% url 'sourcing:offer-create' %}">Catat offer pertama</a></div></td></tr>{% endfor %}</tbody>
 </table></div></section>
 {% endblock %}
